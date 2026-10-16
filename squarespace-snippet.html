@@ -1,0 +1,7 @@
+<!-- Paste into a Squarespace Code Block (uncheck "Display Source"). Replace YOUR-SITE with your Cloudflare Pages address. -->
+<iframe id="arcade" src="https://YOUR-SITE.pages.dev/embed.html" style="width:100%;height:600px;border:0" loading="lazy" title="PopUpIdeas Arcade"></iframe>
+<script>
+addEventListener('message',function(e){
+  if(e.data&&e.data.arcadeHeight&&String(e.origin).indexOf('YOUR-SITE.pages.dev')>-1){document.getElementById('arcade').style.height=e.data.arcadeHeight+'px';}
+});
+</script>
