@@ -1,5 +1,21 @@
 [
   {
+    "id": "soft-landing",
+    "title": "Soft Landing",
+    "tagline": "Real gravity, one engine. Touch down without breaking anything.",
+    "path": "soft-landing/",
+    "added": "2026-10-08",
+    "thumb": "soft-landing/thumb.png"
+  },
+  {
+    "id": "redrock-run",
+    "title": "Redrock Run",
+    "tagline": "Fast arcade canyon flyer. Dodge, shoot, roll.",
+    "path": "redrock-run/",
+    "added": "2026-10-08",
+    "thumb": "redrock-run/thumb.png"
+  },
+  {
     "id": "pocketwave",
     "title": "Pocketwave",
     "tagline": "Neon pool meets mini golf. Sink every ball, beat par.",
@@ -14,14 +30,6 @@
     "path": "warpath/",
     "added": "2026-10-10",
     "thumb": "warpath/thumb.png"
-  },
-  {
-    "id": "redrock-run",
-    "title": "Redrock Run",
-    "tagline": "Fast arcade canyon flyer. Dodge, shoot, roll.",
-    "path": "redrock-run/",
-    "added": "2026-10-08",
-    "thumb": "redrock-run/thumb.png"
   },
   {
     "id": "bankshot",
@@ -48,14 +56,6 @@
     "thumb": "webling/thumb.png"
   },
   {
-    "id": "soft-landing",
-    "title": "Soft Landing",
-    "tagline": "Real gravity, one engine. Touch down without breaking anything.",
-    "path": "soft-landing/",
-    "added": "2026-10-08",
-    "thumb": "soft-landing/thumb.png"
-  },
-  {
     "id": "hidden-physics",
     "title": "Hidden Physics",
     "tagline": "Daily puzzle: find the secret law behind the orbs.",
@@ -78,13 +78,5 @@
     "path": "rivets-patch-job/",
     "added": "2026-10-10",
     "thumb": "rivets-patch-job/thumb.png"
-  },
-  {
-    "id": "gap-bridge",
-    "title": "Gap Bridge",
-    "tagline": "Span the gap. Brace with triangles. Stay under budget.",
-    "path": "gap-bridge/",
-    "added": "2026-10-10",
-    "thumb": "gap-bridge/thumb.png"
   }
 ]

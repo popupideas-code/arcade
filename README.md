@@ -3,7 +3,7 @@
 One repo, one folder per game. Cloudflare Pages serves it as a static site.
 
 - `index.html` is the arcade home page. `embed.html` is the same grid for Squarespace.
-- `games.json` lists the games. Both pages read it, so a new entry shows up everywhere on the next deploy.
+- `games.json` lists the games, in the order they appear (top of the file = first in the gallery). Both pages read it, so a new entry shows up everywhere on the next deploy.
 - `squarespace-snippet.html` is the paste-in code for Squarespace (set it up once).
 
 ## Add a game

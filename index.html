@@ -4,7 +4,7 @@
 <script>
 fetch('games.json',{cache:'no-store'}).then(r=>r.json()).then(list=>{
   const g=document.getElementById('g'),now=Date.now();
-  list.sort((a,b)=>(b.added||'').localeCompare(a.added||'')).forEach(x=>{
+  list.forEach(x=>{
     const isNew=x.added&&now-Date.parse(x.added)<14*864e5;
     const a=document.createElement('a');a.className='card';a.href=x.path;
     a.innerHTML=(x.thumb?'<img loading="lazy" alt="" src="'+x.thumb+'">':'')+'<div class="b"><div class="t">'+x.title+(isNew?'<span class="new">NEW</span>':'')+'</div><div class="d">'+(x.tagline||'')+'</div></div>';
