@@ -1,0 +1,622 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Hidden Physics</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* Layout: one narrow lab bench. Graph-paper sandbox on top, controls and notebook beneath. */
+:root {
+  --paper: #EEF2F4;
+  --sheet: #F8FAFB;
+  --grid: #DCE4E8;
+  --grid2: #BCC9D1;
+  --ink: #14212B;
+  --muted: #566672;
+  --line: #C9D4DA;
+  --red: #E2472F;
+  --blue: #2F62D9;
+  --good: #17835A;
+  --warn: #B87408;
+  --display: 'Bricolage Grotesque', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --mono: 'IBM Plex Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #0E151C; --sheet: #141D26; --grid: #1C2833; --grid2: #2C3D4B; --ink: #E6EEF3;
+    --muted: #8FA1AE; --line: #263541; --red: #FF6A52; --blue: #5B8DFF; --good: #3FCB91; --warn: #E9A53A;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #0E151C; --sheet: #141D26; --grid: #1C2833; --grid2: #2C3D4B; --ink: #E6EEF3;
+  --muted: #8FA1AE; --line: #263541; --red: #FF6A52; --blue: #5B8DFF; --good: #3FCB91; --warn: #E9A53A;
+  color-scheme: dark;
+}
+body { background: var(--paper); color: var(--ink); font-family: var(--display); font-size: 15px; line-height: 1.5; }
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+.wrap { max-width: 600px; margin: 0 auto; padding-inline: 16px; padding-block: 20px 48px; display: flex; flex-direction: column; gap: 16px; }
+header { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap; }
+h1 { margin: 0; font-size: clamp(30px, 8vw, 42px); font-weight: 800; letter-spacing: -0.03em; line-height: 1; text-wrap: balance; }
+.meta { margin: 8px 0 0; font-family: var(--mono); font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.howto { margin: 0; color: var(--muted); max-width: 62ch; }
+.label { font-family: var(--mono); font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; }
+.hint { font-size: 13px; color: var(--muted); }
+.stage { background: var(--sheet); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.statusbar { display: flex; justify-content: space-between; gap: 12px; align-items: baseline; flex-wrap: wrap; padding: 10px 14px; border-bottom: 1px solid var(--line); }
+canvas#cv { display: block; width: 100%; aspect-ratio: 1; touch-action: none; cursor: crosshair; }
+.controls { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.controls .grow { flex: 1 1 auto; }
+.btn { font: 600 14px var(--display); min-height: 44px; padding: 8px 16px; border-radius: 6px; border: 1px solid var(--ink); background: transparent; color: var(--ink); cursor: pointer; }
+.btn.primary { background: var(--ink); color: var(--paper); }
+.btn.quiet { border-color: var(--line); color: var(--muted); }
+.btn:disabled { opacity: 0.4; cursor: default; }
+.btn:focus-visible, .run:focus-visible, .card:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+.seg { display: inline-flex; border: 1px solid var(--ink); border-radius: 6px; overflow: hidden; }
+.seg button { font: 600 14px var(--display); min-height: 42px; padding: 6px 16px; border: 0; background: transparent; color: var(--ink); cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--ink); color: var(--paper); }
+.seg button:focus-visible { outline: 2px solid var(--blue); outline-offset: -4px; }
+.panel { background: var(--sheet); border: 1px solid var(--line); border-radius: 8px; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+.panel h2 { margin: 0; font-size: 20px; font-weight: 800; letter-spacing: -0.01em; }
+.panel p { margin: 0; }
+.runs { display: flex; flex-wrap: wrap; gap: 10px; }
+.run { display: flex; flex-direction: column; gap: 4px; align-items: center; background: transparent; border: 1px solid var(--line); border-radius: 6px; padding: 6px; cursor: pointer; color: var(--muted); font: 400 11px var(--mono); }
+.run canvas { width: 72px; height: 72px; display: block; border-radius: 3px; }
+.empty { color: var(--muted); font-size: 14px; }
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 10px; }
+.card { text-align: left; font: 400 14px/1.45 var(--display); color: var(--ink); background: transparent; border: 1px solid var(--line); border-radius: 6px; padding: 12px; cursor: pointer; min-width: 0; }
+.card[aria-pressed="true"] { border-color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); }
+.card b { display: block; font-family: var(--mono); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; font-weight: 500; }
+.score { font-size: 44px; font-weight: 800; letter-spacing: -0.03em; line-height: 1; font-variant-numeric: tabular-nums; }
+.law { border-left: 3px solid var(--ink); padding-left: 12px; }
+.law .real { color: var(--muted); font-size: 14px; margin-top: 4px; }
+pre.share { margin: 0; font: 400 14px/1.6 var(--mono); background: var(--paper); border: 1px solid var(--line); border-radius: 6px; padding: 12px; overflow-x: auto; white-space: pre; user-select: all; }
+.good { color: var(--good); }
+.warn { color: var(--warn); }
+.goal { background: var(--sheet); border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px; display: flex; flex-direction: column; gap: 6px; }
+.goal h2 { margin: 0; font: 500 12px var(--mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.goal p { margin: 0; max-width: 62ch; }
+.goal .scoring { color: var(--muted); font-size: 14px; }
+.steps { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.steps li { display: flex; gap: 8px; align-items: flex-start; min-width: 0; padding: 8px 10px; border: 1px solid var(--line); border-radius: 6px; color: var(--muted); }
+.steps .n { flex: none; width: 22px; height: 22px; border-radius: 50%; border: 1px solid currentColor; display: grid; place-items: center; font: 500 12px var(--mono); }
+.steps .t { display: flex; flex-direction: column; min-width: 0; }
+.steps b { font-size: 14px; line-height: 22px; }
+.steps small { display: none; font-size: 12px; line-height: 1.4; margin-top: 2px; }
+.steps li[data-state="current"] { color: var(--ink); border-color: var(--ink); grid-column: span 1; }
+.steps li[data-state="current"] .n { background: var(--ink); color: var(--paper); }
+.steps li[data-state="current"] small { display: block; }
+.steps li[data-state="done"] .n { background: var(--good); border-color: var(--good); color: var(--paper); }
+@media (max-width: 560px) { .steps { grid-template-columns: 1fr; } .steps li:not([data-state="current"]) { padding-block: 5px; } }
+.statusbar .coach { margin: 6px 0 0; font-size: 16px; line-height: 1.45; max-width: 62ch; }
+.statusbar .note { margin: 8px 0 0; padding: 8px 10px; font-size: 14px; background: var(--paper); border-left: 3px solid var(--ink); border-radius: 0 4px 4px 0; }
+.key { list-style: none; margin: 0; padding: 10px 14px; display: flex; flex-wrap: wrap; gap: 6px 18px; border-top: 1px solid var(--line); font-size: 13px; color: var(--muted); }
+.key li { display: flex; align-items: center; gap: 6px; }
+.key .sw { display: inline-block; flex: none; }
+.key .dot { width: 14px; height: 14px; border-radius: 50%; background: var(--red); box-shadow: 9px 0 0 -1px var(--blue); margin-right: 9px; }
+.key .arr { color: var(--ink); font-size: 16px; line-height: 1; }
+.key .pin { width: 10px; height: 10px; transform: rotate(45deg); background: var(--blue); border: 1px solid var(--ink); }
+.ideas { padding: 0; gap: 0; }
+.ideas summary { cursor: pointer; padding: 14px 16px; font-weight: 600; }
+.ideas summary:focus-visible { outline: 2px solid var(--blue); outline-offset: -2px; }
+.ideas ul { margin: 0; padding: 0 16px 14px 34px; display: flex; flex-direction: column; gap: 8px; }
+.run:disabled { cursor: default; opacity: 0.85; }
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Hidden Physics</h1>
+      <p class="meta" id="meta"></p>
+    </div>
+    <button class="btn quiet" id="newUniverse" type="button">Practice universe</button>
+  </header>
+
+  <section class="goal" id="goal">
+    <h2>Your goal</h2>
+    <p>The four orbs below are pushed around by <b>one secret law</b>. The law never changes, so you can find it by testing, like a scientist. Figure out the law, then prove it by predicting where the orbs end up.</p>
+    <p class="scoring">Score: 40 for naming the law, 5 for each correct prediction, 3 for each experiment you did not need.</p>
+  </section>
+
+  <ol class="steps" id="steps" aria-label="Progress">
+    <li><span class="n">1</span><span class="t"><b>Experiment</b><small>Set up the orbs, press Run, and watch what the law does. You get 6 runs.</small></span></li>
+    <li><span class="n">2</span><span class="t"><b>Predict</b><small>Two tests. Place a pin where you think each orb will end up.</small></span></li>
+    <li><span class="n">3</span><span class="t"><b>Name the law</b><small>Pick the rule that explains everything you saw.</small></span></li>
+  </ol>
+
+  <section class="stage">
+    <div class="statusbar">
+      <span class="label" id="phaseLabel"></span>
+      <p class="coach" id="coachText"></p>
+      <p class="note" id="coachNote" hidden></p>
+    </div>
+    <canvas id="cv" aria-label="Physics sandbox with four numbered orbs. Drag orbs to set up an experiment."></canvas>
+    <ul class="key" id="key">
+      <li><span class="sw dot"></span>Orb. The number is its ID.</li>
+      <li><span class="sw arr">&rarr;</span>Arrow: the direction and speed it starts with.</li>
+      <li id="keyPin" hidden><span class="sw pin"></span>Pin: your prediction for that orb.</li>
+    </ul>
+  </section>
+
+  <section class="controls" id="labCtl">
+    <div class="seg" role="group" aria-label="Drag mode">
+      <button type="button" id="modeMove" aria-pressed="true">Move orbs</button>
+      <button type="button" id="modeAim" aria-pressed="false">Set arrows</button>
+    </div>
+    <button class="btn quiet" type="button" id="stopBtn">Remove arrows</button>
+    <button class="btn quiet" type="button" id="resetBtn">Reset</button>
+    <span class="grow"></span>
+    <button class="btn" type="button" id="toTest">Start the test</button>
+    <button class="btn primary" type="button" id="runBtn">Run experiment</button>
+  </section>
+
+  <section class="controls" id="predictCtl" hidden>
+    <span class="hint grow">Each pin matches the orb with the same number.</span>
+    <button class="btn primary" type="button" id="lockBtn">Lock in prediction</button>
+  </section>
+
+  <section class="panel" id="revealPanel" hidden>
+    <h2 id="revealTitle"></h2>
+    <p id="revealText"></p>
+    <div class="controls"><button class="btn primary" type="button" id="nextBtn"></button></div>
+  </section>
+
+  <details class="panel ideas" id="ideas">
+    <summary>Stuck? Ideas to test</summary>
+    <ul>
+      <li><b>Does color matter?</b> Put orbs 1 and 3 (both red) close together, away from the others. Run. Then do the same with 1 and 2 (red and blue).</li>
+      <li><b>Does speed matter?</b> Press Remove arrows so every orb starts at rest, and run. Then run again with long arrows.</li>
+      <li><b>Do the walls matter?</b> Put one orb near a wall with no arrow and see where it drifts.</li>
+      <li><b>Does distance matter?</b> Run the same pair close together, then far apart.</li>
+      <li><b>Change one thing per run.</b> If you change two, you will not know which one caused the difference.</li>
+    </ul>
+  </details>
+
+  <section class="panel" id="notebook">
+    <h2>Notebook</h2>
+    <p class="hint">Each run is saved here. A hollow circle is where an orb started, a filled circle is where it ended.</p>
+    <div class="runs" id="runs"></div>
+    <p class="empty" id="runsEmpty">Nothing yet. Press Run experiment to record your first run.</p>
+  </section>
+
+  <section class="panel" id="guessPanel" hidden>
+    <h2>Name the law</h2>
+    <p>Which of these governs this universe?</p>
+    <div class="cards" id="cards"></div>
+    <div class="controls"><button class="btn primary" type="button" id="guessBtn" disabled>Submit answer</button></div>
+  </section>
+
+  <section class="panel" id="donePanel" hidden>
+    <span class="label" id="doneLabel"></span>
+    <div class="score" id="scoreNum"></div>
+    <div class="law"><b id="lawName"></b><p id="lawDesc"></p><p class="real" id="lawReal"></p></div>
+    <pre class="share" id="shareText"></pre>
+    <div class="controls">
+      <button class="btn primary" type="button" id="copyBtn">Copy result</button>
+      <button class="btn" type="button" id="againBtn">Another universe</button>
+      <span class="hint" id="copyNote" role="status"></span>
+    </div>
+  </section>
+</div>
+
+<script>
+// ==SIM-START==
+const W = 100, RAD = 4.2, STEPS = 240, DT = 1 / 60;
+const RULES = [
+  { id: 'charge', name: 'Opposites attract', desc: 'Orbs of different colors pull on each other. Orbs of the same color push apart. The closer they are, the stronger the force.', real: 'Like electric charge. Real charges follow an inverse-square law, this one is gentler.' },
+  { id: 'chaser', name: 'Red hunts blue', desc: 'Every red orb steers toward the nearest blue orb. Blue orbs never react to anything.', real: 'Not real physics. A one-way force breaks Newton’s third law.' },
+  { id: 'wall', name: 'Nearest wall pulls', desc: 'Every orb is pulled toward whichever wall is closest to it. Color does not matter.', real: 'Like a ball near the edge of a sticky container.' },
+  { id: 'band', name: 'Rubber bands', desc: 'Every pair of orbs is joined by an invisible elastic. The farther apart they are, the harder it pulls.', real: 'Hooke’s law. Springs pull harder the more they stretch.' },
+  { id: 'speed', name: 'Red speeds up, blue slows down', desc: 'Nothing pulls on anything else. Red orbs gain speed as they move. Blue orbs lose it.', real: 'Drag is real, as air resistance. Red has the opposite, negative drag.' },
+  { id: 'magnet', name: 'Movers are magnets', desc: 'A fast-moving orb pulls every other orb toward it. A slow or resting orb pulls on nothing.', real: 'Moving charges make magnetic fields. Resting ones do not.' }
+];
+function dist(a, b) { return Math.hypot(a[0] - b[0], a[1] - b[1]); }
+function step(rule, os) {
+  const n = os.length, ax = new Array(n).fill(0), ay = new Array(n).fill(0);
+  if (rule === 'charge' || rule === 'band') {
+    for (let i = 0; i < n; i++) for (let j = i + 1; j < n; j++) {
+      const dx = os[j].x - os[i].x, dy = os[j].y - os[i].y;
+      const d = Math.max(Math.hypot(dx, dy), 6), ux = dx / d, uy = dy / d;
+      const f = rule === 'charge' ? (os[i].c === os[j].c ? -1 : 1) * 140 / d : 0.09 * d;
+      ax[i] += ux * f; ay[i] += uy * f; ax[j] -= ux * f; ay[j] -= uy * f;
+    }
+  } else if (rule === 'chaser') {
+    for (let i = 0; i < n; i++) {
+      if (os[i].c !== 0) continue;
+      let bj = -1, bd = 1e9;
+      for (let j = 0; j < n; j++) if (os[j].c === 1) { const d = Math.hypot(os[j].x - os[i].x, os[j].y - os[i].y); if (d < bd) { bd = d; bj = j; } }
+      if (bj >= 0 && bd > 0.5) { ax[i] += (os[bj].x - os[i].x) / bd * 7; ay[i] += (os[bj].y - os[i].y) / bd * 7; }
+    }
+  } else if (rule === 'wall') {
+    for (let i = 0; i < n; i++) {
+      const o = os[i], dl = o.x, dr = W - o.x, dt = o.y, db = W - o.y, m = Math.min(dl, dr, dt, db);
+      if (m === dl) ax[i] -= 6; else if (m === dr) ax[i] += 6; else if (m === dt) ay[i] -= 6; else ay[i] += 6;
+    }
+  } else if (rule === 'speed') {
+    for (let i = 0; i < n; i++) {
+      const k = os[i].c === 0 ? 0.45 : -1.0;
+      ax[i] += k * os[i].vx; ay[i] += k * os[i].vy;
+    }
+  } else if (rule === 'magnet') {
+    for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) {
+      if (i === j || Math.hypot(os[j].vx, os[j].vy) < 9) continue;
+      const dx = os[j].x - os[i].x, dy = os[j].y - os[i].y, d = Math.max(Math.hypot(dx, dy), 6);
+      ax[i] += dx / d * 150 / d; ay[i] += dy / d * 150 / d;
+    }
+  }
+  for (let i = 0; i < n; i++) {
+    const o = os[i];
+    o.vx = (o.vx + ax[i] * DT) * (1 - 0.08 * DT); o.vy = (o.vy + ay[i] * DT) * (1 - 0.08 * DT);
+    const sp = Math.hypot(o.vx, o.vy); if (sp > 60) { o.vx *= 60 / sp; o.vy *= 60 / sp; }
+    o.x += o.vx * DT; o.y += o.vy * DT;
+    if (o.x < RAD) { o.x = RAD; o.vx = Math.abs(o.vx) * 0.85; }
+    if (o.x > W - RAD) { o.x = W - RAD; o.vx = -Math.abs(o.vx) * 0.85; }
+    if (o.y < RAD) { o.y = RAD; o.vy = Math.abs(o.vy) * 0.85; }
+    if (o.y > W - RAD) { o.y = W - RAD; o.vy = -Math.abs(o.vy) * 0.85; }
+  }
+  for (let i = 0; i < n; i++) for (let j = i + 1; j < n; j++) {
+    const a = os[i], b = os[j], dx = b.x - a.x, dy = b.y - a.y, d = Math.hypot(dx, dy);
+    if (d >= 2 * RAD || d < 1e-6) continue;
+    const nx = dx / d, ny = dy / d, ov = (2 * RAD - d) / 2;
+    a.x -= nx * ov; a.y -= ny * ov; b.x += nx * ov; b.y += ny * ov;
+    const rel = (a.vx - b.vx) * nx + (a.vy - b.vy) * ny;
+    if (rel > 0) { const j2 = rel * 0.95; a.vx -= j2 * nx; a.vy -= j2 * ny; b.vx += j2 * nx; b.vy += j2 * ny; }
+  }
+}
+function simulate(rule, orbs) {
+  const os = orbs.map(o => ({ x: o.x, y: o.y, vx: o.vx, vy: o.vy, c: o.c }));
+  const frames = [os.map(o => [o.x, o.y])];
+  for (let s = 0; s < STEPS; s++) { step(rule, os); frames.push(os.map(o => [o.x, o.y])); }
+  return frames;
+}
+function hashStr(s) { let h = 2166136261; for (const ch of s) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619); } return h >>> 0; }
+function rng(seed) { let a = seed >>> 0; return () => { a = (a + 0x6D2B79F5) >>> 0; let t = a; t = Math.imul(t ^ t >>> 15, t | 1); t ^= t + Math.imul(t ^ t >>> 7, t | 61); return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+// Generates a test setup, then checks by simulation that the law visibly matters
+// and that the outcome is not chaotic, so a good guess can actually be rewarded.
+function makeTest(rule, seedStr) {
+  let first = null;
+  for (let att = 0; att < 300; att++) {
+    const r = rng(hashStr(seedStr + ':' + att)), os = [];
+    let ok = true;
+    for (const c of [0, 1, 0, 1]) {
+      let placed = false;
+      for (let k = 0; k < 60 && !placed; k++) {
+        const x = 14 + r() * 72, y = 14 + r() * 72;
+        if (os.every(o => Math.hypot(o.x - x, o.y - y) > 20)) { const a = r() * 6.2832, s = 4 + r() * 12; os.push({ x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, c }); placed = true; }
+      }
+      if (!placed) { ok = false; break; }
+    }
+    if (!ok) continue;
+    if (!first) first = os;
+    const fin = simulate(rule, os).at(-1), base = simulate(null, os).at(-1);
+    const pert = simulate(rule, os.map(o => ({ ...o, x: o.x + 0.25, y: o.y - 0.2 }))).at(-1);
+    let eff = 0, wob = 0;
+    for (let i = 0; i < os.length; i++) { eff = Math.max(eff, dist(fin[i], base[i])); wob = Math.max(wob, dist(fin[i], pert[i])); }
+    if (eff > 14 && wob < 5) return { orbs: os, att };
+  }
+  return { orbs: first, att: -1 };
+}
+// ==SIM-END==
+
+const $ = id => document.getElementById(id);
+const cv = $('cv'), ctx = cv.getContext('2d');
+const MONO = "'IBM Plex Mono', ui-monospace, Menlo, monospace";
+const HIT = 10;
+let C = {}, K = 1;
+const S = { phase: 'lab', mode: 'move', u: 0, key: '', label: '', runsLeft: 6, runs: [], ghost: null, orbs: [], tests: [], ti: 0, pins: [], results: [], guess: null, anim: null, drag: null, practice: 0, reveal: null, score: 0 };
+
+function readColors() {
+  const s = getComputedStyle(document.documentElement), g = n => s.getPropertyValue(n).trim();
+  C = { sheet: g('--sheet'), grid: g('--grid'), grid2: g('--grid2'), ink: g('--ink'), muted: g('--muted'), red: g('--red'), blue: g('--blue'), good: g('--good'), warn: g('--warn') };
+}
+function defaultLab() {
+  return [
+    { x: 24, y: 28, vx: 10, vy: 5, c: 0 }, { x: 74, y: 30, vx: -9, vy: 6, c: 1 },
+    { x: 28, y: 72, vx: 8, vy: -7, c: 0 }, { x: 72, y: 70, vx: -6, vy: -8, c: 1 }
+  ];
+}
+function dayKey() { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+
+function newGame(u, key, label) {
+  Object.assign(S, { phase: 'lab', mode: 'move', u, key, label, runsLeft: 6, runs: [], ghost: null, orbs: defaultLab(), ti: 0, pins: [], results: [], guess: null, anim: null, drag: null, reveal: null, score: 0, note: '' });
+  const rule = RULES[u].id;
+  S.tests = [makeTest(rule, key + ':t1'), makeTest(rule, key + ':t2')];
+  $('copyNote').textContent = '';
+  renderRuns(); ui(); draw();
+}
+function newDaily() {
+  const key = dayKey(), d = new Date();
+  newGame(hashStr('law:' + key) % RULES.length, key, 'Daily universe · ' + d.toLocaleDateString('en-US', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' }));
+}
+function newPractice() {
+  S.practice++;
+  newGame((S.u + 1 + S.practice) % RULES.length, 'practice:' + Date.now(), 'Practice universe ' + S.practice);
+}
+
+// ---------- drawing ----------
+function circle(x, y, r) { ctx.beginPath(); ctx.arc(x, y, r, 0, 6.2832); }
+function orbCol(c) { return c ? C.blue : C.red; }
+function drawOrb(x, y, c, n, alpha) {
+  ctx.globalAlpha = alpha == null ? 1 : alpha;
+  circle(x, y, RAD); ctx.fillStyle = orbCol(c); ctx.fill(); ctx.lineWidth = 0.5; ctx.strokeStyle = C.ink; ctx.stroke();
+  ctx.fillStyle = C.sheet; ctx.font = '500 4.4px ' + MONO; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText(String(n + 1), x, y + 0.3);
+  ctx.globalAlpha = 1;
+}
+function drawArrow(o, col) {
+  const s = 1.3, len = Math.hypot(o.vx, o.vy) * s;
+  if (len < RAD + 1.5) return;
+  const a = Math.atan2(o.vy, o.vx), ex = o.x + o.vx * s, ey = o.y + o.vy * s;
+  ctx.strokeStyle = col; ctx.fillStyle = col; ctx.lineWidth = 0.7;
+  ctx.beginPath(); ctx.moveTo(o.x + Math.cos(a) * RAD, o.y + Math.sin(a) * RAD); ctx.lineTo(ex, ey); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(ex + Math.cos(a) * 1.5, ey + Math.sin(a) * 1.5);
+  ctx.lineTo(ex - Math.cos(a - 0.5) * 2.6, ey - Math.sin(a - 0.5) * 2.6);
+  ctx.lineTo(ex - Math.cos(a + 0.5) * 2.6, ey - Math.sin(a + 0.5) * 2.6); ctx.closePath(); ctx.fill();
+}
+function drawPin(p, n) {
+  const r = 4;
+  ctx.beginPath(); ctx.moveTo(p.x, p.y - r); ctx.lineTo(p.x + r, p.y); ctx.lineTo(p.x, p.y + r); ctx.lineTo(p.x - r, p.y); ctx.closePath();
+  ctx.fillStyle = orbCol(p.c); ctx.fill(); ctx.lineWidth = 0.7; ctx.strokeStyle = C.sheet; ctx.stroke();
+  ctx.lineWidth = 0.4; ctx.strokeStyle = C.ink; ctx.stroke();
+  ctx.fillStyle = C.sheet; ctx.font = '500 3.8px ' + MONO; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText(String(n + 1), p.x, p.y + 0.3);
+}
+function drawTrails(frames, upTo, alpha, n) {
+  ctx.lineWidth = 0.8; ctx.globalAlpha = alpha;
+  for (let i = 0; i < n; i++) {
+    ctx.strokeStyle = orbCol(S.orbs[i] ? S.orbs[i].c : (i % 2)); ctx.beginPath();
+    for (let f = 0; f <= upTo; f++) { const p = frames[f][i]; if (f === 0) ctx.moveTo(p[0], p[1]); else ctx.lineTo(p[0], p[1]); }
+    ctx.stroke();
+  }
+  ctx.globalAlpha = 1;
+}
+function drawGrid() {
+  ctx.fillStyle = C.sheet; ctx.fillRect(0, 0, W, W);
+  for (let v = 0; v <= W; v += 10) {
+    ctx.strokeStyle = v % 50 === 0 ? C.grid2 : C.grid; ctx.lineWidth = v % 50 === 0 ? 0.3 : 0.2;
+    ctx.beginPath(); ctx.moveTo(v, 0); ctx.lineTo(v, W); ctx.moveTo(0, v); ctx.lineTo(W, v); ctx.stroke();
+  }
+  ctx.fillStyle = C.muted; ctx.font = '400 2.6px ' + MONO; ctx.textBaseline = 'alphabetic'; ctx.textAlign = 'center';
+  ctx.fillText('50', 50, W - 1.2); ctx.textAlign = 'left'; ctx.fillText('50', 1.2, 48.6);
+  ctx.fillText('0', 1.2, W - 1.2); ctx.textAlign = 'right'; ctx.fillText('100', W - 1.2, W - 1.2);
+}
+function draw(frameIdx) {
+  ctx.setTransform(K, 0, 0, K, 0, 0);
+  drawGrid();
+  const P = S.phase;
+  if (S.anim) {
+    const idx = frameIdx == null ? 0 : frameIdx, fr = S.anim.frames;
+    drawTrails(fr, idx, 0.6, S.orbs.length);
+    if (S.anim.pins) S.anim.pins.forEach((p, i) => drawPin(p, i));
+    fr[idx].forEach((p, i) => drawOrb(p[0], p[1], S.orbs[i].c, i));
+    return;
+  }
+  if (P === 'lab') {
+    if (S.ghost) drawTrails(S.ghost, STEPS, 0.3, S.orbs.length);
+    S.orbs.forEach(o => drawArrow(o, C.muted));
+    S.orbs.forEach((o, i) => drawOrb(o.x, o.y, o.c, i));
+  } else if (P === 'predict') {
+    S.orbs.forEach(o => drawArrow(o, C.muted));
+    S.orbs.forEach((o, i) => drawOrb(o.x, o.y, o.c, i, 0.9));
+    S.pins.forEach(p => { circle(p.x, p.y, HIT); ctx.setLineDash([1.2, 1.2]); ctx.lineWidth = 0.4; ctx.strokeStyle = orbCol(p.c); ctx.globalAlpha = 0.55; ctx.stroke(); ctx.setLineDash([]); ctx.globalAlpha = 1; });
+    S.pins.forEach((p, i) => drawPin(p, i));
+  } else if (P === 'reveal' && S.reveal) {
+    const r = S.reveal;
+    drawTrails(r.frames, STEPS, 0.35, S.orbs.length);
+    r.final.forEach((f, i) => {
+      const p = S.pins[i], hit = r.hits[i];
+      ctx.setLineDash([1.2, 1.2]); ctx.lineWidth = 0.5; ctx.strokeStyle = hit ? C.good : C.warn;
+      ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(f[0], f[1]); ctx.stroke(); ctx.setLineDash([]);
+      circle(f[0], f[1], HIT); ctx.lineWidth = 0.4; ctx.strokeStyle = hit ? C.good : C.warn; ctx.globalAlpha = 0.6; ctx.stroke(); ctx.globalAlpha = 1;
+    });
+    S.pins.forEach((p, i) => drawPin(p, i));
+    r.final.forEach((f, i) => drawOrb(f[0], f[1], S.orbs[i].c, i));
+    r.final.forEach((f, i) => {
+      ctx.fillStyle = r.hits[i] ? C.good : C.warn; ctx.font = '500 4px ' + MONO; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(r.hits[i] ? '✓' : '✗', f[0] + 7, f[1] - 7);
+    });
+  } else {
+    S.orbs.forEach((o, i) => drawOrb(o.x, o.y, o.c, i, 0.5));
+  }
+}
+function resize() {
+  const r = cv.getBoundingClientRect(), d = Math.min(window.devicePixelRatio || 1, 2);
+  cv.width = Math.max(1, Math.round(r.width * d)); cv.height = cv.width; K = cv.width / W;
+  if (!S.anim) draw();
+}
+
+// ---------- playback ----------
+function play(frames, speed, pins, done) {
+  S.anim = { frames, pins, t0: performance.now(), speed, done };
+  ui();
+  const tick = now => {
+    if (!S.anim || S.anim.frames !== frames) return;
+    const idx = Math.min(STEPS, Math.floor((now - S.anim.t0) / 1000 * 60 * speed));
+    draw(idx);
+    if (idx >= STEPS) { S.anim = null; done(); return; }
+    requestAnimationFrame(tick);
+  };
+  requestAnimationFrame(tick);
+}
+
+// ---------- phases ----------
+function runExperiment() {
+  if (S.anim || S.phase !== 'lab' || S.runsLeft <= 0) return;
+  const start = S.orbs.map(o => ({ ...o })), frames = simulate(RULES[S.u].id, start);
+  const base = simulate(null, start).at(-1), eff = Math.max(...frames[STEPS].map((p, i) => dist(p, base[i])));
+  play(frames, 1.5, null, () => {
+    S.note = eff < 6 ? 'The law barely did anything in that setup. Try another arrangement: orbs closer together, moving faster, or at rest.'
+      : 'The law pushed the orbs up to ' + Math.round(eff) + ' units away from where they would have ended with no law at all. The box is 100 units wide.';
+    S.runsLeft--; S.runs.push({ start, frames }); S.ghost = frames;
+    renderRuns(); ui(); draw();
+  });
+}
+function startTest(i) {
+  S.ti = i; S.phase = 'predict'; S.reveal = null;
+  S.orbs = S.tests[i].orbs.map(o => ({ ...o }));
+  S.pins = S.orbs.map(o => ({ x: o.x, y: o.y, c: o.c }));
+  ui(); draw();
+}
+function lockIn() {
+  if (S.anim || S.phase !== 'predict') return;
+  const frames = simulate(RULES[S.u].id, S.orbs), final = frames[STEPS], pins = S.pins.map(p => ({ ...p }));
+  play(frames, 1.4, pins, () => {
+    const hits = final.map((f, i) => dist(f, [S.pins[i].x, S.pins[i].y]) <= HIT);
+    S.results.push(hits); S.reveal = { frames, final, hits }; S.phase = 'reveal';
+    ui(); draw();
+  });
+}
+function nextAfterReveal() {
+  if (S.ti === 0) startTest(1); else { S.phase = 'guess'; S.guess = null; renderCards(); ui(); draw(); }
+}
+function submitGuess() {
+  if (S.guess == null) return;
+  const hits = S.results.flat().filter(Boolean).length, correct = S.guess === S.u;
+  S.score = (correct ? 40 : 0) + hits * 5 + S.runsLeft * 3;
+  S.phase = 'done'; S.orbs = S.tests[1].orbs.map(o => ({ ...o }));
+  const L = RULES[S.u];
+  $('doneLabel').textContent = correct ? 'You found the law' : 'Not this time';
+  $('scoreNum').textContent = S.score + ' pts';
+  $('lawName').textContent = L.name; $('lawDesc').textContent = L.desc; $('lawReal').textContent = L.real;
+  $('shareText').textContent = shareText(correct);
+  ui(); draw();
+}
+function shareText(correct) {
+  const used = 6 - S.runsLeft, row = a => a.map(h => h ? '🟩' : '🟧').join('');
+  return 'Hidden Physics · ' + S.label.split(' · ').pop() + '\n' +
+    'Experiments ' + '🟦'.repeat(used) + '⬜'.repeat(S.runsLeft) + ' ' + used + '/6\n' +
+    'Test 1 ' + row(S.results[0]) + '\nTest 2 ' + row(S.results[1]) + '\nLaw ' + (correct ? '✅' : '❌') + ' · ' + S.score + ' pts';
+}
+
+// ---------- UI ----------
+function ui() {
+  const P = S.phase, busy = !!S.anim;
+  $('meta').textContent = S.label;
+  $('labCtl').hidden = P !== 'lab'; $('notebook').hidden = P === 'done'; $('goal').hidden = P !== 'lab'; $('ideas').hidden = P !== 'lab';
+  $('keyPin').hidden = !(P === 'predict' || P === 'reveal');
+  document.querySelectorAll('.run').forEach(b => { b.disabled = P !== 'lab' || busy; });
+  const stage = { lab: 0, predict: 1, reveal: 1, guess: 2, done: 3 }[P];
+  document.querySelectorAll('#steps li').forEach((li, i) => {
+    li.dataset.state = i < stage ? 'done' : i === stage ? 'current' : 'todo';
+    li.querySelector('.n').textContent = i < stage ? '✓' : String(i + 1);
+  });
+  $('predictCtl').hidden = P !== 'predict';
+  $('revealPanel').hidden = P !== 'reveal'; $('guessPanel').hidden = P !== 'guess'; $('donePanel').hidden = P !== 'done';
+  $('modeMove').setAttribute('aria-pressed', S.mode === 'move'); $('modeAim').setAttribute('aria-pressed', S.mode === 'aim');
+  $('runBtn').textContent = S.runsLeft > 0 ? 'Run experiment (' + S.runsLeft + ' left)' : 'No experiments left';
+  $('runBtn').disabled = busy || S.runsLeft <= 0;
+  ['toTest', 'resetBtn', 'stopBtn', 'modeMove', 'modeAim'].forEach(id => $(id).disabled = busy);
+  $('lockBtn').disabled = busy;
+  $('toTest').classList.toggle('primary', S.runsLeft <= 0);
+  $('runBtn').classList.toggle('primary', S.runsLeft > 0);
+  const L = { lab: 'Lab · ' + S.runsLeft + ' of 6 experiments left', predict: 'Test ' + (S.ti + 1) + ' of 2 · predict', reveal: 'Test ' + (S.ti + 1) + ' of 2 · result', guess: 'Name the law', done: 'Result' }[P];
+  $('phaseLabel').textContent = busy ? 'Running…' : L;
+  $('coachText').textContent = busy ? 'Watch where each orb goes. Every run lasts 4 seconds of simulated time.' : coach();
+  $('coachNote').hidden = !(P === 'lab' && S.note && !busy); $('coachNote').textContent = S.note;
+  if (P === 'reveal' && S.reveal) {
+    const n = S.reveal.hits.filter(Boolean).length;
+    $('revealTitle').textContent = n + ' of 4 pins landed in range';
+    $('revealText').textContent = n === 4 ? 'You read this universe well.' : n >= 2 ? 'You are close. The law is doing something you have partly figured out.' : 'The orbs did not behave the way you expected. That is a clue.';
+    $('nextBtn').textContent = S.ti === 0 ? 'Next test' : 'Name the law';
+  }
+}
+function coach() {
+  const P = S.phase, r = S.runs.length, drag = S.mode === 'move' ? 'Drag an orb to move it.' : 'Drag from an orb to set the arrow it starts with.';
+  if (P === 'lab') {
+    if (S.runsLeft <= 0) return 'You are out of experiments. Press Start the test.';
+    if (r === 0) return 'Start here: press Run experiment to watch the orbs with no changes. Orbs 1 and 3 are red, 2 and 4 are blue. The gray arrows show which way each one starts moving.';
+    if (r === 1) return 'Now change one thing and run again, then compare the two runs in your notebook. ' + drag;
+    return 'Look for a pattern. Do colors matter? Distance? Speed? ' + drag + ' When you have a theory, press Start the test. You cannot return to the lab.';
+  }
+  if (P === 'predict') return 'Use what you learned. Drag each pin to where you think its orb will be after 4 seconds. A pin you leave on its orb means you expect it to stay put. A pin scores if it lands inside its dashed ring.';
+  if (P === 'reveal') return 'Compare each pin with where the orb really went. Where you missed is evidence about the law.';
+  if (P === 'guess') return 'Pick the law that best explains your notebook and both tests. You get one answer.';
+  return 'Here is the law, and how it compares to real physics.';
+}
+function renderRuns() {
+  const box = $('runs'); box.textContent = '';
+  $('runsEmpty').hidden = S.runs.length > 0;
+  S.runs.forEach((run, n) => {
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'run'; b.setAttribute('aria-label', 'Reload setup from run ' + (n + 1));
+    const c = document.createElement('canvas'); c.width = 144; c.height = 144; b.appendChild(c);
+    const t = document.createElement('span'); t.textContent = 'Run ' + (n + 1); b.appendChild(t);
+    b.addEventListener('click', () => { if (S.anim || S.phase !== 'lab') return; S.orbs = run.start.map(o => ({ ...o })); S.ghost = run.frames; ui(); draw(); });
+    box.appendChild(b); thumb(c, run);
+  });
+}
+function thumb(c, run) {
+  const g = c.getContext('2d'), s = c.width / W; g.setTransform(s, 0, 0, s, 0, 0);
+  g.fillStyle = C.sheet; g.fillRect(0, 0, W, W);
+  g.strokeStyle = C.grid2; g.lineWidth = 0.6; g.beginPath(); g.moveTo(50, 0); g.lineTo(50, W); g.moveTo(0, 50); g.lineTo(W, 50); g.stroke();
+  run.start.forEach((o, i) => {
+    g.strokeStyle = orbCol(o.c); g.fillStyle = orbCol(o.c); g.lineWidth = 2; g.beginPath();
+    run.frames.forEach((f, k) => { if (k === 0) g.moveTo(f[i][0], f[i][1]); else g.lineTo(f[i][0], f[i][1]); }); g.stroke();
+    g.beginPath(); g.arc(o.x, o.y, 4.5, 0, 6.2832); g.lineWidth = 1.6; g.stroke();
+    const e = run.frames[STEPS][i]; g.beginPath(); g.arc(e[0], e[1], 4.5, 0, 6.2832); g.fill();
+  });
+}
+function renderCards() {
+  const box = $('cards'); box.textContent = '';
+  RULES.forEach((r, i) => {
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'card'; b.setAttribute('aria-pressed', 'false');
+    const t = document.createElement('b'); t.textContent = 'Law ' + String.fromCharCode(65 + i); b.appendChild(t);
+    b.appendChild(document.createTextNode(r.desc));
+    b.addEventListener('click', () => { S.guess = i; [...box.children].forEach((x, k) => x.setAttribute('aria-pressed', k === i)); $('guessBtn').disabled = false; });
+    box.appendChild(b);
+  });
+  $('guessBtn').disabled = true;
+}
+
+// ---------- input ----------
+function pt(e) { const r = cv.getBoundingClientRect(); return { x: (e.clientX - r.left) / r.width * W, y: (e.clientY - r.top) / r.height * W }; }
+function nearest(list, p, max) { let b = -1, bd = max; list.forEach((o, i) => { const d = Math.hypot(o.x - p.x, o.y - p.y); if (d < bd) { bd = d; b = i; } }); return b; }
+cv.addEventListener('pointerdown', e => {
+  if (S.anim) return;
+  const p = pt(e);
+  const list = S.phase === 'lab' ? S.orbs : S.phase === 'predict' ? S.pins : null;
+  if (!list) return;
+  const i = nearest(list, p, 10);
+  if (i >= 0) { S.drag = i; cv.setPointerCapture(e.pointerId); }
+});
+cv.addEventListener('pointermove', e => {
+  if (S.drag == null) return;
+  const p = pt(e), cl = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+  if (S.phase === 'lab') {
+    const o = S.orbs[S.drag];
+    if (S.mode === 'move') { o.x = cl(p.x, RAD, W - RAD); o.y = cl(p.y, RAD, W - RAD); }
+    else { let vx = (p.x - o.x) / 1.3, vy = (p.y - o.y) / 1.3; const m = Math.hypot(vx, vy); if (m > 30) { vx *= 30 / m; vy *= 30 / m; } o.vx = vx; o.vy = vy; }
+  } else if (S.phase === 'predict') {
+    const q = S.pins[S.drag]; q.x = cl(p.x, 2, W - 2); q.y = cl(p.y, 2, W - 2);
+  }
+  draw();
+});
+['pointerup', 'pointercancel'].forEach(t => cv.addEventListener(t, () => { S.drag = null; }));
+
+$('modeMove').addEventListener('click', () => { S.mode = 'move'; ui(); });
+$('modeAim').addEventListener('click', () => { S.mode = 'aim'; ui(); });
+$('resetBtn').addEventListener('click', () => { S.orbs = defaultLab(); ui(); draw(); });
+$('stopBtn').addEventListener('click', () => { S.orbs.forEach(o => { o.vx = 0; o.vy = 0; }); ui(); draw(); });
+$('runBtn').addEventListener('click', runExperiment);
+$('toTest').addEventListener('click', () => { if (!S.anim) startTest(0); });
+$('lockBtn').addEventListener('click', lockIn);
+$('nextBtn').addEventListener('click', nextAfterReveal);
+$('guessBtn').addEventListener('click', submitGuess);
+$('newUniverse').addEventListener('click', () => { if (!S.anim) newPractice(); });
+$('againBtn').addEventListener('click', () => { if (!S.anim) newPractice(); });
+$('copyBtn').addEventListener('click', () => {
+  const txt = $('shareText').textContent, note = $('copyNote');
+  const fallback = () => { const r = document.createRange(); r.selectNodeContents($('shareText')); const s = getSelection(); s.removeAllRanges(); s.addRange(r); note.textContent = 'Selected. Copy it manually.'; };
+  try { navigator.clipboard.writeText(txt).then(() => { note.textContent = 'Copied.'; }, fallback); } catch (err) { fallback(); }
+});
+
+readColors();
+new MutationObserver(() => { readColors(); renderRuns(); if (!S.anim) draw(); }).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => { readColors(); renderRuns(); if (!S.anim) draw(); });
+new ResizeObserver(resize).observe(cv);
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { if (!S.anim) draw(); });
+newDaily();
+resize();
+</script>
+
+</body></html>

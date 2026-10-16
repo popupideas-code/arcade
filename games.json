@@ -6,5 +6,85 @@
     "path": "pocketwave/",
     "thumb": "pocketwave/thumb.png",
     "added": "2026-10-15"
+  },
+  {
+    "id": "warpath",
+    "title": "Warpath",
+    "tagline": "Hold the rail on Perihelion. Neon vector pencil-sketch defense.",
+    "path": "warpath/",
+    "added": "2026-10-10",
+    "thumb": "warpath/thumb.png"
+  },
+  {
+    "id": "redrock-run",
+    "title": "Redrock Run",
+    "tagline": "Fast arcade canyon flyer. Dodge, shoot, roll.",
+    "path": "redrock-run/",
+    "added": "2026-10-08",
+    "thumb": "redrock-run/thumb.png"
+  },
+  {
+    "id": "bankshot",
+    "title": "Bankshot",
+    "tagline": "Ricochet tank defense of a Dyson sphere. Bank every shot.",
+    "path": "bankshot/",
+    "added": "2026-10-13",
+    "thumb": "bankshot/thumb.png"
+  },
+  {
+    "id": "redline-runner",
+    "title": "Redline Runner",
+    "tagline": "Courier run across a city watched by Halo drones.",
+    "path": "redline-runner/",
+    "added": "2026-10-14",
+    "thumb": "redline-runner/thumb.png"
+  },
+  {
+    "id": "webling",
+    "title": "Webling",
+    "tagline": "Climb the old oak and rescue baby spiders with silk swings.",
+    "path": "webling/",
+    "added": "2026-10-09",
+    "thumb": "webling/thumb.png"
+  },
+  {
+    "id": "soft-landing",
+    "title": "Soft Landing",
+    "tagline": "Real gravity, one engine. Touch down without breaking anything.",
+    "path": "soft-landing/",
+    "added": "2026-10-08",
+    "thumb": "soft-landing/thumb.png"
+  },
+  {
+    "id": "hidden-physics",
+    "title": "Hidden Physics",
+    "tagline": "Daily puzzle: find the secret law behind the orbs.",
+    "path": "hidden-physics/",
+    "added": "2026-10-10",
+    "thumb": "hidden-physics/thumb.png"
+  },
+  {
+    "id": "plate-patch",
+    "title": "Plate Patch",
+    "tagline": "Fit colored plates into the hull breach before the air runs out.",
+    "path": "plate-patch/",
+    "added": "2026-10-10",
+    "thumb": "plate-patch/thumb.png"
+  },
+  {
+    "id": "rivets-patch-job",
+    "title": "Rivet's Patch Job",
+    "tagline": "Drag shapes off the belt into the hull breach. Dodge turrets.",
+    "path": "rivets-patch-job/",
+    "added": "2026-10-10",
+    "thumb": "rivets-patch-job/thumb.png"
+  },
+  {
+    "id": "gap-bridge",
+    "title": "Gap Bridge",
+    "tagline": "Span the gap. Brace with triangles. Stay under budget.",
+    "path": "gap-bridge/",
+    "added": "2026-10-10",
+    "thumb": "gap-bridge/thumb.png"
   }
 ]
