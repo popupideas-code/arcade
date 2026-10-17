@@ -1,5 +1,13 @@
 [
   {
+    "id": "wonderdeep",
+    "title": "Wonderdeep",
+    "tagline": "3D voxel metroidvania. Swim, slide, mine and bubble through Crash Hollow and Brook Burrows.",
+    "path": "wonderdeep/",
+    "added": "2026-10-17",
+    "thumb": "wonderdeep/thumb.png"
+  },
+  {
     "id": "soft-landing",
     "title": "Soft Landing",
     "tagline": "Real gravity, one engine. Touch down without breaking anything.",

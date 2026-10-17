@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Wonderdeep</title>
+<style>
+  :root { color-scheme:dark; --ts:1; --hs:1; --gold:#ffd23f; --panel:rgba(22,16,52,.86); --sl:env(safe-area-inset-left,0px); --sr:env(safe-area-inset-right,0px); --st:env(safe-area-inset-top,0px); --sb:env(safe-area-inset-bottom,0px); }
+  * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html,body { margin:0; height:100%; overflow:hidden; background:#24204a; color:#fff; font-family:"Trebuchet MS",system-ui,sans-serif; font-size:calc(16px*var(--ts)); user-select:none; -webkit-user-select:none; -webkit-touch-callout:none; overscroll-behavior:none; touch-action:none; }
+  canvas { display:block; }
+  #hud { position:fixed; inset:0; pointer-events:none; transition:opacity .6s; text-shadow:0 2px 0 rgba(0,0,0,.5); font-size:calc(1em*var(--hs)); }
+  #hearts { position:absolute; top:calc(10px + var(--st)); left:calc(14px + var(--sl)); font-size:1.7em; letter-spacing:2px; line-height:1; }
+  .heart { color:#ff4d6d; } .heart:not(.on) { color:#fff5; }
+  #burst { position:absolute; top:calc(48px + var(--st) + .3em*var(--hs)); left:calc(16px + var(--sl)); display:flex; gap:6px; }
+  .pip { width:14px; height:14px; transform:rotate(45deg); border:3px solid #7df9ff; } .pip.on { background:#7df9ff; box-shadow:0 0 8px #7df9ff; }
+  #stats { position:absolute; top:calc(10px + var(--st)); left:50%; transform:translateX(-50%); background:var(--panel); padding:3px 12px; border-radius:20px; font-weight:700; font-size:.8em; white-space:nowrap; }
+  #abil { position:absolute; bottom:calc(10px + var(--sb)); left:calc(12px + var(--sl)); width:calc(46px*var(--hs)); height:calc(46px*var(--hs)); background:var(--panel); border-radius:50%; border:3px solid #fff4; display:none; }
+  #abil canvas { width:100%; height:100%; }
+  body:not(.istouch) #abil { display:block; }
+  #mm { position:fixed; top:calc(10px + var(--st)); border-radius:50%; box-shadow:0 4px 0 #0006; pointer-events:none; display:none; z-index:2; }
+  #mm.mm-tr { right:calc(12px + var(--sr)); } #mm.mm-tl { left:calc(12px + var(--sl)); top:calc(80px + var(--st)); }
+  #obj { position:fixed; top:calc(40px + var(--st)); left:50%; transform:translateX(-50%); display:none; align-items:center; gap:8px; background:var(--panel); border:2px solid #00e5ff; border-radius:20px; padding:2px 12px; font-size:.85em; z-index:2; pointer-events:none; }
+  #objarrow { color:#00e5ff; display:inline-block; width:1.2em; text-align:center; }
+  #feed { position:fixed; left:calc(12px + var(--sl)); top:calc(92px + var(--st)); width:min(250px,42vw); display:flex; flex-direction:column; gap:6px; pointer-events:none; z-index:2; font-size:calc(.82em*var(--hs)); }
+  .fi { background:var(--panel); border-left:4px solid #fff6; border-radius:8px; padding:5px 9px; line-height:1.3; opacity:0; animation:fin .25s forwards; } .fi.out { opacity:0 !important; transition:opacity .4s; }
+  .fi.bitline { border-color:#00e5ff; } .fi.bitline b { display:block; color:#00e5ff; font-size:.85em; } .fi.banner { border-color:var(--gold); } .fi h3 { margin:0 0 2px; font-size:1.05em; } .fi p { margin:0; opacity:.9; }
+  @keyframes fin { to { opacity:.95; } }
+  #roomname { position:fixed; top:calc(70px + var(--st)); left:50%; transform:translateX(-50%); font-size:1.25em; font-weight:700; opacity:0; pointer-events:none; text-shadow:0 2px 0 #000a; letter-spacing:1px; white-space:nowrap; }
+  #roomname.show { animation:rn 2.8s forwards; } @keyframes rn { 0%{opacity:0} 15%,70%{opacity:.95} 100%{opacity:0} }
+  #boss,#twist { position:fixed; left:50%; transform:translateX(-50%); width:min(46vw,420px); display:none; text-align:center; font-weight:700; font-size:.8em; text-shadow:0 2px 0 #000; pointer-events:none; }
+  #boss { top:calc(62px + var(--st)); } #twist { top:calc(66px + var(--st)); }
+  .bar { height:10px; border-radius:8px; background:#0008; border:2px solid #fff6; overflow:hidden; } .bar i { display:block; height:100%; background:linear-gradient(90deg,#ff6b6b,#ffd23f); width:100%; }
+  #twist .bar i { background:linear-gradient(90deg,#b36bff,#ff7ad9); }
+  #uw { position:fixed; inset:0; background:linear-gradient(#2a8fd066,#0a3a7a99); opacity:0; pointer-events:none; transition:opacity .15s; z-index:1; }
+  #dark { position:fixed; inset:0; pointer-events:none; opacity:0; background:radial-gradient(ellipse at center, transparent 35%, #000 105%); z-index:1; }
+  body.paperworld #hud { filter:none; }
+  #flash,#fade { position:fixed; inset:0; pointer-events:none; opacity:0; } #fade { background:#000; transition:opacity .18s; z-index:9; }
+  #wheel { position:fixed; left:50%; bottom:calc(14px + var(--sb)); transform:translateX(-50%); display:none; gap:8px; pointer-events:none; z-index:3; }
+  .wi { width:104px; padding:8px 6px; background:var(--panel); border:3px solid; border-radius:12px; text-align:center; font-weight:700; font-size:.8em; } .wi.sel { transform:scale(1.15); background:#3a3070; } .wi.lock { opacity:.4; } .wi small { display:block; opacity:.8; font-weight:400; margin-top:2px; }
+  #menu { position:fixed; inset:0; display:none; align-items:center; justify-content:center; background:rgba(12,8,32,.62); z-index:5; padding:var(--st) var(--sr) var(--sb) var(--sl); }
+  .panel { background:var(--panel); border:3px solid var(--gold); border-radius:14px; padding:18px 24px; width:min(94vw,720px); max-height:92vh; overflow:auto; box-shadow:0 8px 0 #0006; touch-action:pan-y; }
+  .panel h1 { margin:0 0 6px; color:var(--gold); text-align:center; letter-spacing:2px; }
+  .note { margin:6px 0 10px; line-height:1.45; opacity:.92; text-align:center; font-size:.92em; } .hint { margin:8px 0 0; text-align:center; opacity:.6; font-size:.78em; }
+  .it { display:flex; justify-content:space-between; gap:16px; padding:9px 14px; margin:3px 0; border-radius:8px; cursor:pointer; } .it em { font-style:normal; opacity:.8; font-size:.82em; text-align:right; }
+  .it.foc { background:var(--gold); color:#222; } .it.dis { opacity:.35; }
+  #capture { position:fixed; inset:0; display:none; align-items:center; justify-content:center; background:#000b; z-index:20; font-size:1.4em; text-align:center; padding:20px; }
+  #photo { position:fixed; bottom:calc(14px + var(--sb)); left:50%; transform:translateX(-50%); display:none; background:var(--panel); padding:8px 16px; border-radius:10px; z-index:4; font-size:.85em; }
+  .mapwrap { display:flex; flex-direction:column; gap:8px; align-items:center; max-width:96vw; } #mapc { background:var(--panel); border:3px solid var(--gold); border-radius:12px; max-width:96vw; height:auto; }
+  .mapbtns { display:flex; gap:8px; } .mapbtns button, #photo button { font:inherit; font-weight:700; padding:8px 16px; border:0; border-radius:8px; background:var(--gold); color:#222; }
+  body.hc #hud, body.hc .panel, body.hc .fi { --panel:#000; } body.hc .heart.on { color:#ff0; } body.hc .it.foc { background:#fff; }
+
+  /* ---------- touch overlay (iPhone / iPad / Android) ---------- */
+  #touch { position:fixed; inset:0; display:none; z-index:3; pointer-events:none; }
+  body[data-state=play] #touch { pointer-events:auto; } body:not([data-state=play]) #touch .tb { display:none; }
+  .tb { position:absolute; display:flex; align-items:center; justify-content:center; text-align:center; border-radius:50%; background:rgba(255,255,255,.16); border:3px solid rgba(255,255,255,.45); font-weight:700; font-size:.78em; color:#fff; text-shadow:0 1px 0 #000a; line-height:1.1; backdrop-filter:blur(2px); }
+  .tb.on { background:rgba(255,210,63,.55); transform:scale(.94); }
+  .tb.jump { width:92px; height:92px; right:calc(24px + var(--sr)); bottom:calc(24px + var(--sb)); font-size:.95em; }
+  .tb.shoot { width:70px; height:70px; right:calc(126px + var(--sr)); bottom:calc(34px + var(--sb)); }
+  .tb.bonk { width:70px; height:70px; right:calc(34px + var(--sr)); bottom:calc(126px + var(--sb)); }
+  .tb.run { width:62px; height:62px; right:calc(122px + var(--sr)); bottom:calc(116px + var(--sb)); }
+  .tb.crouch { width:56px; height:56px; right:calc(204px + var(--sr)); bottom:calc(30px + var(--sb)); }
+  .tb.tool { width:56px; height:56px; right:calc(26px + var(--sr)); bottom:calc(212px + var(--sb)); border-color:#ffd23f; }
+  .tb.bit { width:48px; height:48px; left:calc(50% - 60px); bottom:calc(12px + var(--sb)); border-color:#00e5ff; }
+  .tb.burst { width:48px; height:48px; left:calc(50% + 12px); bottom:calc(12px + var(--sb)); border-color:#7df9ff; }
+  .tb.map, .tb.menu { width:auto; height:30px; border-radius:15px; padding:0 14px; top:calc(8px + var(--st)); } .tb.map { left:calc(50% - 150px); } .tb.menu { left:calc(50% + 100px); }
+  #touch.layL { transform:scaleX(-1); } #touch.layL .tb { transform:scaleX(-1); } #touch.layL .tb.on { transform:scaleX(-1) scale(.94); }
+  #touch.layC .tb.jump { width:78px; height:78px; } #touch.layC .tb.shoot, #touch.layC .tb.bonk { width:58px; height:58px; } #touch.layC .tb.run { width:50px; height:50px; } #touch.layC .tb.crouch, #touch.layC .tb.tool { width:46px; height:46px; }
+  #touch.layC .tb.shoot { right:calc(108px + var(--sr)); bottom:calc(26px + var(--sb)); } #touch.layC .tb.bonk { right:calc(28px + var(--sr)); bottom:calc(108px + var(--sb)); } #touch.layC .tb.run { right:calc(104px + var(--sr)); bottom:calc(98px + var(--sb)); } #touch.layC .tb.crouch { right:calc(176px + var(--sr)); } #touch.layC .tb.tool { bottom:calc(176px + var(--sb)); right:calc(20px + var(--sr)); }
+  #tbase { position:fixed; width:100px; height:100px; margin:-50px 0 0 -50px; border-radius:50%; border:3px solid rgba(255,255,255,.4); background:rgba(255,255,255,.1); display:none; pointer-events:none; z-index:4; }
+  #tthumb { position:absolute; left:30px; top:30px; width:40px; height:40px; border-radius:50%; background:rgba(255,255,255,.55); }
+  @media (pointer:coarse) { #feed { font-size:.68em; width:min(200px,34vw); } }
+  @media (max-height:430px) { #feed { top:calc(84px + var(--st)); width:min(210px,38vw); } .panel { padding:12px 16px; } .it { padding:6px 12px; } }
+</style>
+</head>
+<body>
+<div id="hud">
+  <div id="hearts"></div><div id="burst"></div><div id="stats"></div><div id="abil"></div>
+</div>
+<canvas id="mm" width="130" height="130"></canvas>
+<div id="obj"><span id="objarrow">▲</span><span id="objtxt"></span></div>
+<div id="feed"></div>
+<div id="roomname"></div>
+<div id="boss"><div id="bossname"></div><div class="bar"><i id="bossfill"></i></div></div>
+<div id="twist"><div id="twistname"></div><div class="bar"><i id="twistfill"></i></div></div>
+<div id="uw"></div><div id="dark"></div><div id="wheel"></div><div id="flash"></div><div id="fade"></div><div id="menu"></div>
+<div id="capture"><div id="capturetxt"></div></div>
+<div id="photo">Photo Mode · drag / right stick to orbit · <button id="shotbtn">Take photo</button> <button id="exitphoto">Exit</button></div>
+<div id="tbase"><div id="tthumb"></div></div>
+<div id="touch">
+  <div class="tb jump" data-a="jump">JUMP</div><div class="tb shoot" data-a="shoot">SHOOT</div><div class="tb bonk" data-a="bonk">BONK<br>MINE</div>
+  <div class="tb run" data-a="run">RUN<br>DASH</div><div class="tb crouch" data-a="crouch">ROLL</div><div class="tb tool" data-a="tool"><span id="tooltxt">—</span></div>
+  <div class="tb bit" data-a="bit">BIT</div><div class="tb burst" data-a="burst">BURST</div><div class="tb map" data-a="map">Map</div><div class="tb menu" data-a="menu">Menu</div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/CopyShader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/LuminosityHighPassShader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/EffectComposer.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/MaskPass.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/ShaderPass.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/RenderPass.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/UnrealBloomPass.js"></script>
+<script src="js/data.js"></script>
+<script src="js/biome2.js"></script>
+<script src="js/audio-manifest.js"></script>
+<script src="js/engine.js"></script>
+<script src="js/world.js"></script>
+<script src="js/visuals.js"></script>
+<script src="js/player.js"></script>
+<script src="js/enemies.js"></script>
+<script src="js/traps.js"></script>
+<script src="js/water.js"></script>
+<script src="js/slide.js"></script>
+<script src="js/bit.js"></script>
+<script src="js/twist.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/touch.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
