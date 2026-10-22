@@ -1,5 +1,13 @@
 [
   {
+    "id": "common-enemy",
+    "title": "Common Enemy",
+    "tagline": "Red vs Blue pong turns co-op invasion. Satire, lasers, and a very polite revive policy.",
+    "path": "common-enemy/",
+    "added": "2026-10-22",
+    "thumb": "common-enemy/thumb.png"
+  },
+  {
     "id": "wonderdeep",
     "title": "Wonderdeep",
     "tagline": "3D voxel metroidvania. Swim, slide, mine and bubble through Crash Hollow and Brook Burrows.",
