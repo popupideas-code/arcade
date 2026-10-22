@@ -37,7 +37,7 @@ function layout(){
   S=Math.min(IW/W,IH/H);OX=(IW-W*S)/2;OY=(IH-H*S)/2;
   const cs=getComputedStyle(probe);
   const sT=Math.max(0,((parseFloat(cs.paddingTop)||0)-OY)/S),sB=Math.max(0,((parseFloat(cs.paddingBottom)||0)-OY)/S);
-  P[0].y=H-sB-54;P[1].y=sT+54;MID=H/2;
+  P[0].y=H-sB-86;P[1].y=sT+86;MID=H/2;
 }
 
 /* ---------- audio ---------- */
@@ -171,10 +171,19 @@ function startWave(){
   say('WAVE '+wave+'. '+QUIPS[wave-1],GRN,3);voice('wave_q_'+(wave-1));
 }
 const WAVES=[{n:6,t:['d']},{n:9,t:['d','d','s']},{n:12,t:['d','s','h']},{n:14,t:['d','s','s','h']}];
-function spawnAlien(k){
-  const kind=k||pick(WAVES[wave-1].t);sideFlip=-sideFlip;const side=sideFlip;
-  let x,y,tries=0;do{x=rnd(40,W-40);y=MID+side*rnd(14,50);tries++}while(Math.hypot(x-ball.x,y-ball.y)<50&&tries<6);
-  aliens.push({k:kind,x,y,side,r:kind==='h'?17:14,hp:kind==='h'?3:kind==='s'?2:1,vy:(18+wave*5)*(kind==='h'?.65:kind==='s'?.85:1),born:.5,tm:0,ph:rnd(0,6),ft:rnd(1.5,3),fl:0,dead:false,shoots:kind==='s'});
+function spawnAlien(k,sx,tx,ty,delay){
+  const kind=k||pick(WAVES[Math.max(0,Math.min(3,wave-1))].t);sideFlip=-sideFlip;const side=sideFlip;
+  const S={x:sx==null?(Math.random()<.5?-30:W+30):sx,y:MID+(Math.random()<.5?-1:1)*rnd(90,150)};
+  const T2={x:tx==null?rnd(40,W-40):tx,y:ty==null?MID+side*rnd(16,40):ty};
+  aliens.push({k:kind,x:S.x,y:S.y,S,T:T2,ent:0,dur:1.7,R:rnd(45,65),sg:S.x<W/2?1:-1,hold:.7,side,r:kind==='h'?17:14,hp:kind==='h'?3:kind==='s'?2:1,vy:(18+wave*5)*(kind==='h'?.65:kind==='s'?.85:1),born:delay||0,tm:0,ph:rnd(0,6),ft:rnd(1.5,3),fl:0,dead:false,shoots:kind==='s'});
+}
+function spawnSquad(m){
+  const sx=Math.random()<.5?-30:W+30,y0=MID+(Math.random()<.5?-1:1)*rnd(90,150);
+  tone(300,.35,'sawtooth',.03,700);
+  for(let i=0;i<m;i++){
+    spawnAlien(null,sx,m===1?W/2:50+i*(W-100)/(m-1),null,i*.28);
+    const a=aliens[aliens.length-1];a.S.y=y0;a.y=y0;
+  }
 }
 function waveClear(){
   waveState='clear';clearT=2.4;P[0].score+=50;P[1].score+=50;sfx.win();
@@ -422,7 +431,7 @@ function updateWave(dt){
   }
   if(waveState==='spawn'){
     spawnT-=dt;const n=WAVES[wave-1].n;
-    if(spawnT<=0&&spawned<n){spawnAlien();spawned++;spawnT=Math.max(.8,2.1-wave*.2)}
+    if(spawnT<=0&&spawned<n){const m=Math.min(n-spawned,wave<3?3:4);spawnSquad(m);spawned+=m;spawnT=Math.max(3.2,6-wave*.5)}
     if(spawned>=n&&aliens.every(a=>a.dead))waveClear();
   }else{
     clearT-=dt;
@@ -433,6 +442,8 @@ function updateAliens(dt){
   for(const a of aliens){
     if(a.dead)continue;a.tm+=dt;a.fl=Math.max(0,a.fl-dt);
     if(a.born>0){a.born-=dt;continue}
+    if(a.ent<1){a.ent=Math.min(1,a.ent+dt/a.dur);const u=a.ent,e=u*u*(3-2*u),th=u*7.854,R=a.R*(1-u);a.x=a.S.x+(a.T.x-a.S.x)*e+R*Math.sin(th)*a.sg;a.y=a.S.y+(a.T.y-a.S.y)*e+R*(1-Math.cos(th));continue}
+    if(a.hold>0){a.hold-=dt;a.x=clamp(a.x+Math.sin(a.tm*3)*10*dt,16,W-16);continue}
     a.y+=a.side*a.vy*dt;a.x=clamp(a.x+Math.sin(a.tm*1.8+a.ph)*38*dt,16,W-16);
     if(a.shoots){a.ft-=dt;if(a.ft<=0){a.ft=rnd(2.4,4);bolts.push({x:a.x,y:a.y,vy:a.side*170,side:a.side,dead:false})}}
     const tp=a.side>0?P[0]:P[1];
@@ -519,6 +530,36 @@ function btn(label,x,y,w,h,col,fn,alpha){
 function crab(f){const l=f?.5:.75,o=f?.45:.35;return[[-1,-.2],[-.6,-.6],[-.35,-.6],[-.2,-.2],[.2,-.2],[.35,-.6],[.6,-.6],[1,-.2],[1,.3],[.55,.3],[o,l],[.15,.3],[-.15,.3],[-o,l],[-.55,.3],[-1,.3]]}
 const HEX=[[-1,0],[-.5,-.87],[.5,-.87],[1,0],[.5,.87],[-.5,.87]];
 const OCT=Array.from({length:8},(_,i)=>[Math.cos(i*Math.PI/4+Math.PI/8),Math.sin(i*Math.PI/4+Math.PI/8)]);
+/* ---------- tiny 3D wireframe engine ---------- */
+const D3=90;
+function extrude(poly,d){const n=poly.length,v=[],e=[];for(const q of poly)v.push([q[0],q[1],-d]);for(const q of poly)v.push([q[0],q[1],d]);for(let i=0;i<n;i++)e.push([i,(i+1)%n],[n+i,n+(i+1)%n],[i,n+i]);return{v,e}}
+const M_BOX={v:[[-1,-1,-1],[1,-1,-1],[1,1,-1],[-1,1,-1],[-1,-1,1],[1,-1,1],[1,1,1],[-1,1,1]],e:[[0,1],[1,2],[2,3],[3,0],[4,5],[5,6],[6,7],[7,4],[0,4],[1,5],[2,6],[3,7]]};
+const M_SPH=(()=>{const v=[],e=[],N=12;for(let a=0;a<3;a++)for(let i=0;i<N;i++){const t=i/N*6.2832,c=Math.cos(t),sn=Math.sin(t);v.push(a===0?[c,sn,0]:a===1?[c,0,sn]:[0,c,sn]);e.push([a*N+i,a*N+(i+1)%N])}return{v,e}})();
+const M_HEX=extrude(HEX,.5),M_OCT=extrude(OCT,.5),M_TIE=extrude([[0,-.1],[.2,.15],[0,.75],[-.2,.15]],.5);
+const M_CRAB=[extrude(crab(0),.4),extrude(crab(1),.4)];
+function padMesh(sg){
+  const v=[],e=[],ring=[[-5,0],[-2.5,-6],[2.5,-6],[5,0],[2.5,6],[-2.5,6]],xs=[[-1,.55],[-.8,1],[.8,1],[1,.55]];
+  for(const [x,k] of xs)for(const r of ring)v.push([x,r[0]*k,r[1]*k]);
+  for(let j=0;j<4;j++)for(let i=0;i<6;i++){e.push([j*6+i,j*6+(i+1)%6]);if(j<3)e.push([j*6+i,(j+1)*6+i])}
+  const b=v.length;v.push([-.11,-5*sg,-3.5],[.11,-5*sg,-3.5],[.11,-5*sg,3.5],[-.11,-5*sg,3.5],[0,-15*sg,0]);
+  e.push([b,b+1],[b+1,b+2],[b+2,b+3],[b+3,b],[b,b+4],[b+1,b+4],[b+2,b+4],[b+3,b+4]);
+  return{v,e};
+}
+const M_PAD=[padMesh(1),padMesh(-1)];
+function mesh3(M,x,y,sx,sy,sz,rx,ry,col,lw,al){
+  const cY=Math.cos(ry),sY=Math.sin(ry),cX=Math.cos(rx),sX=Math.sin(rx),n=M.v.length,pv=new Array(n);let zs=0;
+  for(let i=0;i<n;i++){
+    const v=M.v[i],X=v[0]*sx,Y=v[1]*sy,Z=v[2]*sz;
+    const x1=X*cY+Z*sY,z1=-X*sY+Z*cY,y2=Y*cX-z1*sX,z2=Y*sX+z1*cX,k=D3/(D3-z2);
+    pv[i]=[x+x1*k,y+y2*k,z2];zs+=z2;
+  }
+  const zc=zs/n,A=new Path2D(),B=new Path2D();
+  for(const ed of M.e){const a=pv[ed[0]],b=pv[ed[1]],Q=(a[2]+b[2])/2>=zc?B:A;Q.moveTo(a[0],a[1]);Q.lineTo(b[0],b[1])}
+  ctx.save();ctx.lineCap='round';ctx.lineJoin='round';ctx.strokeStyle=col;const g=ctx.globalAlpha*(al==null?1:al);
+  ctx.globalAlpha=g*.4;ctx.lineWidth=lw*.8;ctx.stroke(A);
+  ctx.globalAlpha=g*.2;ctx.lineWidth=lw*3.2;ctx.stroke(B);
+  ctx.globalAlpha=g;ctx.lineWidth=lw;ctx.stroke(B);ctx.restore();
+}
 function drawBG(){
   ctx.setTransform(DPR,0,0,DPR,0,0);ctx.fillStyle='#050914';ctx.fillRect(0,0,IW,IH);
   ctx.setTransform(DPR*S,0,0,DPR*S,OX*DPR,OY*DPR);
@@ -542,12 +583,9 @@ function drawPaddle(p){
     txt('x_x',x,y+(p.i?22:-22),13,HAZ,'center',.8,false);return;
   }
   if(p.inv>0&&((T*14)|0)%2)return;
-  const w=p.w+(p.hit>0?6:0);
-  ctx.save();ctx.fillStyle='rgba(5,9,20,.85)';rr(x-w/2,y-5,w,10,5);ctx.fill();ctx.restore();
-  neon(p.col,2.4,()=>rr(x-w/2,y-5,w,10,5));
-  neon('#ffffff',1,()=>{ctx.beginPath();ctx.moveTo(x-w/2+8,y);ctx.lineTo(x+w/2-8,y)},2);
-  const dir=p.i?1:-1;
-  neon(p.col,1.5,()=>{ctx.beginPath();ctx.moveTo(x-5,y+dir*-9*-1+(-dir*0));ctx.lineTo(x,y-dir*9);ctx.lineTo(x+5,y-dir*9+0);ctx.lineTo(x,y-dir*9)},2);
+  const vx=(x-(p.lx==null?x:p.lx))*60;p.lx=x;p.vs=(p.vs||0)*.85+vx*.15;
+  const w=p.w+(p.hit>0?6:0),sw=Math.sin(T*.9+p.i*2)*.07+clamp(p.vs*.0007,-.22,.22);
+  mesh3(M_PAD[p.i],x,y,w/2,1,1,p.i?-.55:.55,sw,p.hit>0?'#ffffff':p.col,1.8,1);
 }
 function drawBall(){
   const oc=ball.last<0?'#ffffff':P[ball.last].col;
@@ -557,45 +595,34 @@ function drawBall(){
     ctx.restore();
   }
   const pr=serveT>0?1+.25*Math.sin(T*16):1;
-  neon(oc,2.2,()=>{ctx.beginPath();ctx.arc(ball.x,ball.y,ball.r*pr,0,6.283)},3);
-  ctx.save();ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(ball.x,ball.y,ball.r*.55*pr,0,6.283);ctx.fill();ctx.restore();
+  const br=ball.r*1.25*pr;mesh3(M_SPH,ball.x,ball.y,br,br,br,T*3,T*4.2,oc,1.6,1);
+  ctx.save();ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(ball.x,ball.y,ball.r*.4*pr,0,6.283);ctx.fill();ctx.restore();
 }
 function drawAlien(a){
-  const col=a.fl>0?'#ffffff':a.k==='d'?GRN:a.k==='s'?ORG:HAZ;
-  let sc=1,al=1;if(a.born>0){const q=1-a.born/.5;sc=.3+.7*q;al=.3+.7*q}
-  const r=a.r*sc,sy=r*a.side;
-  ctx.save();ctx.globalAlpha=al;
-  if(a.k==='d'){
-    const f=Math.floor(a.tm*3)%2;
-    neon(col,1.8,()=>polyS(crab(f),a.x,a.y,r,sy));
-    neon(col,1.4,()=>{ctx.beginPath();ctx.moveTo(a.x-.45*r,a.y);ctx.lineTo(a.x-.2*r,a.y);ctx.moveTo(a.x+.2*r,a.y);ctx.lineTo(a.x+.45*r,a.y)},2);
-  }else if(a.k==='s'){
-    neon(col,1.8,()=>polyS(HEX,a.x,a.y,r,sy));
-    neon(col,1.5,()=>polyS([[0,-.1],[.2,.15],[0,.75],[-.2,.15]],a.x,a.y,r,sy),2.4);
-    neon(col,1.4,()=>{ctx.beginPath();ctx.moveTo(a.x-.55*r,a.y-.25*sy);ctx.lineTo(a.x-.15*r,a.y-.05*sy);ctx.moveTo(a.x+.55*r,a.y-.25*sy);ctx.lineTo(a.x+.15*r,a.y-.05*sy)},2);
-  }else{
-    neon(col,2,()=>polyS(OCT,a.x,a.y,r,sy));
-    if(a.hp>=2)neon(col,1.5,()=>polyS(OCT,a.x,a.y,r*.65,sy),2.4);
-    if(a.hp>=3)neon(col,1.5,()=>polyS(OCT,a.x,a.y,r*.3,sy),2.4);
-  }
-  ctx.restore();
+  if(a.born>0)return;
+  const col=a.fl>0?'#ffffff':a.k==='d'?GRN:a.k==='s'?ORG:HAZ,r=a.r,sy=r*a.side,sp=a.ent<1?(1-a.ent)*12.566:0,rx=.4;
+  let ry=sp+Math.sin(a.tm*1.6+a.ph)*.6;
+  if(a.k==='d'){mesh3(M_CRAB[Math.floor(a.tm*3)%2],a.x,a.y,r,sy,r,rx,ry,col,1.6,1)}
+  else if(a.k==='s'){mesh3(M_HEX,a.x,a.y,r,sy,r*.8,rx,ry,col,1.6,1);mesh3(M_TIE,a.x,a.y,r,sy,r*.9,rx,ry,col,1.3,.9)}
+  else{ry=sp+a.tm*1.3;mesh3(M_OCT,a.x,a.y,r,sy,r*.7,rx,ry,col,1.8,1);if(a.hp>=2)mesh3(M_OCT,a.x,a.y,r*.62,sy*.62,r*.5,rx,-ry,col,1.4,1);if(a.hp>=3)mesh3(M_OCT,a.x,a.y,r*.3,sy*.3,r*.3,rx,ry*2,col,1.4,1)}
 }
 function drawBoss(){
   const b=boss,col=b.fl>0?'#ffffff':HAZ;
-  neon(col,2.4,()=>polyS(HEX,b.x,b.y,b.w,b.h));
-  neon(col,1.6,()=>polyS(HEX,b.x,b.y,b.w*.68,b.h*.68),2.4);
-  neon(YEL,1.8,()=>polyS([[0,-.1],[.14,.3],[0,.95],[-.14,.3]],b.x,b.y,b.w*.6,b.h*.6),2.4);
+  const bs=Math.sin(b.t*.6)*.5;
+  mesh3(M_HEX,b.x,b.y,b.w,b.h,b.h*1.2,.35,bs,col,2.2,1);
+  mesh3(M_HEX,b.x,b.y,b.w*.68,b.h*.68,b.h*.8,.35,-bs,col,1.6,1);
+  mesh3(M_TIE,b.x,b.y,b.w*.6,b.h*.6,b.h*.5,.35,0,YEL,1.8,1);
   neon(col,2,()=>{ctx.beginPath();ctx.moveTo(b.x-b.w*.5,b.y-b.h*.45);ctx.lineTo(b.x-b.w*.2,b.y-b.h*.15);ctx.moveTo(b.x+b.w*.5,b.y-b.h*.45);ctx.lineTo(b.x+b.w*.2,b.y-b.h*.15)},2.4);
   neon(col,1.6,()=>{ctx.beginPath();ctx.moveTo(b.x-b.w*.4,b.y-b.h);ctx.lineTo(b.x-b.w*.6,b.y-b.h-12);ctx.moveTo(b.x+b.w*.4,b.y-b.h);ctx.lineTo(b.x+b.w*.6,b.y-b.h-12);ctx.moveTo(b.x-b.w*.4,b.y+b.h);ctx.lineTo(b.x-b.w*.6,b.y+b.h+12);ctx.moveTo(b.x+b.w*.4,b.y+b.h);ctx.lineTo(b.x+b.w*.6,b.y+b.h+12)},2.4);
   const bw=100,bx=b.x-bw/2,by=b.y+b.h+20;
   ctx.save();ctx.strokeStyle='rgba(255,255,255,.4)';ctx.lineWidth=1;ctx.strokeRect(bx,by,bw,5);ctx.fillStyle=HAZ;ctx.fillRect(bx,by,bw*b.hp/b.max,5);ctx.restore();
 }
 function drawScene(){
-  for(const b of blocks){if(!b.a)continue;neon(b.col,1.8,()=>rr(b.x,b.y,b.w,b.h,3),3);neon(b.col,1,()=>{ctx.beginPath();ctx.moveTo(b.x+6,b.y+b.h/2);ctx.lineTo(b.x+b.w-6,b.y+b.h/2)},2);if(b.bonus){neon('#ffffff',1.2,()=>rr(b.x-2,b.y-2,b.w+4,b.h+4,4),2);txt(PU[b.bonus].l,b.x+b.w/2,b.y+b.h/2+1,12,'#fff','center',.5+.5*Math.sin(T*6),false)}}
+  for(const b of blocks){if(!b.a)continue;mesh3(M_BOX,b.x+b.w/2,b.y+b.h/2,b.w/2-1,b.h/2-1,5,.45,.18,b.col,1.5,1);if(b.bonus){neon('#ffffff',1.2,()=>rr(b.x-2,b.y-2,b.w+4,b.h+4,4),2);txt(PU[b.bonus].l,b.x+b.w/2,b.y+b.h/2+1,12,'#fff','center',.5+.5*Math.sin(T*6),false)}}
   for(const a of aliens)drawAlien(a);
   if(boss)drawBoss();
   for(const b of bolts){neon(ORG,2,()=>{ctx.beginPath();ctx.moveTo(b.x,b.y-4*Math.sign(b.vy));ctx.lineTo(b.x+3,b.y);ctx.lineTo(b.x,b.y+4*Math.sign(b.vy));ctx.lineTo(b.x-3,b.y);ctx.closePath()},2.5)}
-  for(const c of crates){const d=PU[c.t];if(c.l<3&&((T*8)|0)%2)continue;neon(d.col,2,()=>rr(c.x-c.w/2,c.y-c.h/2,c.w,c.h,4),3);neon('#ffffff',1,()=>rr(c.x-c.w/2+3,c.y-c.h/2+3,c.w-6,c.h-6,2),2);txt(d.l,c.x,c.y+1,13,d.col,'center',1,false)}
+  for(const c of crates){const d=PU[c.t];if(c.l<3&&((T*8)|0)%2)continue;mesh3(M_BOX,c.x,c.y,c.w/2-2,c.h/2,c.h/2,T*1.2,T*1.7,d.col,1.8,1);mesh3(M_BOX,c.x,c.y,6,6,6,-T,T*2,'#ffffff',1,.7);txt(d.l,c.x,c.y+1,13,d.col,'center',1,false)}
   for(const s of shots){neon(P[s.i].col,2,()=>{ctx.beginPath();ctx.moveTo(s.x,s.y);ctx.lineTo(s.x-s.vx*.02,s.y-Math.sign(s.vy)*9)},2.6)}
   drawBall();
   drawPaddle(P[0]);drawPaddle(P[1]);
@@ -613,7 +640,7 @@ function drawHUD(){
     if(rally>1)txt('TEAM x'+mult(),W-10,MID-14,13,YEL,'right',1);
   }
   for(const p of P){
-    const y=p.i?p.y-30:p.y+30,nm=mode===1?(p.i?'RED CPU':'YOU'):(p.i?'RED':'BLUE');
+    const y=p.i?p.y-42:p.y+42,nm=mode===1?(p.i?'RED CPU':'YOU'):(p.i?'RED':'BLUE');
     txt(nm+'  $'+p.score,10,y,12,p.col,'left',p.alive?1:.4,false);
     {const bd=(p.rapid>0?' R':'')+(p.wide>0?' W':'')+(p.spread>0?' S':'');if(bd)txt(bd,112,y,12,YEL,'left',1,false)}
     for(let k=0;k<3;k++){const x=W-18-k*22;ctx.save();ctx.globalAlpha=k<p.lives?1:.18;ctx.restore();
