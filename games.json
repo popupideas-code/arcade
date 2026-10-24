@@ -1,5 +1,13 @@
 [
   {
+    "id": "stick-brawl",
+    "title": "Stick Brawl Deluxe",
+    "tagline": "Satirical stick-figure fighter. Gig-economy tournament, weapon drops, blood, crowds, jiggle physics.",
+    "path": "stick-brawl/",
+    "added": "2026-10-24",
+    "thumb": "stick-brawl/thumb.png"
+  },
+  {
     "id": "rollabout",
     "title": "Rollabout",
     "tagline": "You're a ball. Smash blocks, swing on chains, squash bugs, beat three bosses.",
