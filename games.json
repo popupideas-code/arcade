@@ -1,5 +1,13 @@
 [
   {
+    "id": "rollabout",
+    "title": "Rollabout",
+    "tagline": "You're a ball. Smash blocks, swing on chains, squash bugs, beat three bosses.",
+    "path": "rollabout/",
+    "added": "2026-10-24",
+    "thumb": "rollabout/thumb.png"
+  },
+  {
     "id": "common-enemy",
     "title": "Common Enemy",
     "tagline": "Red vs Blue pong turns co-op invasion. Satire, lasers, and a very polite revive policy.",
