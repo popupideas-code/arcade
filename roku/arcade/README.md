@@ -1,4 +1,9 @@
-# Rollabout for Roku
+# PopUpIdeas Arcade for Roku
+
+One sideloadable channel with a game menu (Up/Down, OK). Only Rollabout is ported so far; the rest show as "coming soon".
+To add a game: put its code in `source/`, mark it ready in `initGame()` and launch it from `handleKey()` in `main.brs`.
+
+## Rollabout
 
 A BrightScript port of the web game in `../../rollabout/`. **Stage 1: level 1 (Meadow Roll) is playable end to end**
 (ball physics, bricks/? blocks, power blocks, springs, conveyors, speed pads, spikes, swinging chain, moving platform,
@@ -7,7 +12,7 @@ levels, level select and saved progress come in the next stages.
 
 ## Install (sideload)
 1. TV in developer mode (Home x3, Up x2, Right, Left, Right, Left, Right). Note the IP and the dev password.
-2. `python3 tools/build_zip.py` (or use the prebuilt `rollabout.zip`).
+2. `python3 tools/build_zip.py` (or use the prebuilt `popupideas-arcade.zip`).
 3. Open `http://<TV-IP>` in a browser, log in as `rokudev`, choose the zip under *Upload*, click *Install*.
 4. Debug output: `telnet <TV-IP> 8085`.
 

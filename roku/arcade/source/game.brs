@@ -80,7 +80,18 @@ sub initGame()
     m.BUMPS = []
     m.RINGS = []
     loadLevel(0)
-    m.G.state = "title"
+    m.menuSel = 0
+    m.menu = []
+    ready = ["Rollabout"]
+    names = ["Rollabout", "Common Enemy", "Wonderdeep", "Soft Landing", "Redrock Run", "Pocketwave", "Warpath", "Bankshot", "Redline Runner", "Webling", "Hidden Physics", "Plate Patch", "Rivet's Patch Job", "Stick Brawl Deluxe"]
+    for each n in names
+        isReady = false
+        for each rname in ready
+            if rname = n then isReady = true
+        end for
+        m.menu.push({ name: n, ready: isReady })
+    end for
+    m.G.state = "menu"
 end sub
 
 sub loadLevel(i)

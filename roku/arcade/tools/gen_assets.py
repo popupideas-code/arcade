@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Generates every PNG, WAV and sprites.json for the Roku port of Rollabout.
 
-Run from anywhere:  python3 roku/rollabout/tools/gen_assets.py
+Run from anywhere:  python3 roku/arcade/tools/gen_assets.py
 Coordinates in the drawing code are the web game's world units (tile = 40);
 SC converts them to Roku screen pixels (1280x720 shows the 600-unit-high world at 1.2x).
 """

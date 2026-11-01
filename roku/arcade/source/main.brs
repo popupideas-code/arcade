@@ -28,8 +28,8 @@ sub Main()
         gs = m.G
         if gs.state = "play" then
             update(dt)
-        else if gs.state = "title" or gs.state = "paused" then
-            if gs.state = "title" then gs.t = gs.t + dt
+        else if gs.state = "title" or gs.state = "menu" then
+            gs.t = gs.t + dt
         end if
         render()
         m.screen.SwapBuffers()
@@ -53,20 +53,34 @@ sub handleKey(code)
             return
         end if
         setHeld(code, true)
+    else if st = "menu" then
+        n = m.menu.Count()
+        if code = 2 then
+            m.menuSel = (m.menuSel + n - 1) mod n
+        else if code = 3 then
+            m.menuSel = (m.menuSel + 1) mod n
+        else if code = 6 or code = 13 then
+            if m.menu[m.menuSel].ready then
+                gs.state = "title"
+            else
+                sfx("bump")
+            end if
+        else if code = 0 then
+            m.quit = true
+        end if
     else if st = "title" then
         if code = 6 or code = 13 then
             startGame(0, true)
         else if code = 0 then
-            m.quit = true
+            gs.state = "menu"
         end if
     else if st = "paused" then
         if code = 6 or code = 13 then
             gs.state = "play"
             clearInput()
         else if code = 0 then
-            gs.state = "title"
             loadLevel(0)
-            gs.state = "title"
+            gs.state = "menu"
             clearInput()
         end if
     else if st = "clear" or st = "over" then
@@ -74,7 +88,7 @@ sub handleKey(code)
             startGame(0, true)
         else if code = 0 then
             loadLevel(0)
-            gs.state = "title"
+            gs.state = "menu"
             clearInput()
         end if
     end if

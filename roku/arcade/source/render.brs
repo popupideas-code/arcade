@@ -430,7 +430,31 @@ sub drawOverlay()
     st = gs.state
     if st = "play" then return
     scr.DrawRect(0, 0, 1280, 720, m.cDim)
-    if st = "title" then
+    if st = "menu" then
+        textC("POPUPIDEAS ARCADE", 640, 50, m.cWhite, m.fLg)
+        n = m.menu.Count()
+        first = m.menuSel - 3
+        if first > n - 7 then first = n - 7
+        if first < 0 then first = 0
+        grey = mkColor(&H7A86B0, 255)
+        for i = 0 to 6
+            idx = first + i
+            if idx < n then
+                it = m.menu[idx]
+                y = 190 + i * 56
+                if idx = m.menuSel then
+                    scr.DrawRect(300, y - 6, 680, 50, mkColor(&HFFC23A, 40))
+                    scr.DrawRect(300, y - 6, 4, 50, m.cGold)
+                end if
+                col = grey
+                if it.ready then col = m.cWhite
+                if idx = m.menuSel and it.ready then col = m.cGold
+                scr.DrawText(it.name, 330, y, col, m.fMd)
+                if not it.ready then textR("coming soon", 950, y + 4, grey, m.fSm)
+            end if
+        end for
+        textC("UP / DOWN choose        OK play        BACK exit", 640, 640, m.cCyan, m.fSm)
+    else if st = "title" then
         textC("ROLLABOUT", 640, 150, m.cWhite, m.fLg)
         textC("You are a ball. Smash the blocks, stomp the bugs,", 640, 280, m.cCyan, m.fMd)
         textC("swing the chains over the big gaps.", 640, 320, m.cCyan, m.fMd)
@@ -438,10 +462,10 @@ sub drawOverlay()
         textC("DOWN in the air  ground pound        hold DOWN on the ground + tap OK  spin dash", 640, 432, m.cWhite, m.fSm)
         textC("on a chain: touch to grab, OK to let go", 640, 464, m.cWhite, m.fSm)
         if gs.best > 0 then textC("BEST " + istr(gs.best), 640, 520, m.cGold, m.fMd)
-        textC("press OK to start", 640, 590, m.cGold, m.fMd)
+        textC("press OK to start        BACK  menu", 640, 590, m.cGold, m.fMd)
     else if st = "paused" then
         textC("PAUSED", 640, 250, m.cWhite, m.fLg)
-        textC("OK  resume          BACK  quit to title", 640, 400, m.cGold, m.fMd)
+        textC("OK  resume          BACK  quit to menu", 640, 400, m.cGold, m.fMd)
     else if st = "clear" then
         textC("LEVEL CLEAR", 640, 170, m.cGreen, m.fLg)
         n = gs.gems[0] + gs.gems[1] + gs.gems[2]
