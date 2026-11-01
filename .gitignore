@@ -1,2 +1,5 @@
 .DS_Store
 node_modules/
+
+# Roku build output
+roku/**/rollabout.zip

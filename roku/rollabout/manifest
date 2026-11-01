@@ -1,0 +1,10 @@
+title=Rollabout
+major_version=1
+minor_version=0
+build_version=00001
+mm_icon_focus_hd=pkg:/images/icon_hd.png
+mm_icon_focus_sd=pkg:/images/icon_sd.png
+splash_screen_hd=pkg:/images/splash_hd.jpg
+splash_color=#08051f
+splash_min_time=800
+ui_resolutions=hd
