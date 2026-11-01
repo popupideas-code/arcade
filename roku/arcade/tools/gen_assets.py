@@ -506,7 +506,7 @@ def icons():
         t = im.resize((int(im.width * r) + 1, int(im.height * r) + 1), Image.LANCZOS)
         l, tp = (t.width - w) // 2, (t.height - h) // 2
         return t.crop((l, tp, l + w, tp + h))
-    fit(540, 405).save(os.path.join(IMG, "icon_hd.png"))
+    fit(290, 218).save(os.path.join(IMG, "icon_hd.png"))
     fit(246, 140).save(os.path.join(IMG, "icon_sd.png"))
     fit(1280, 720).save(os.path.join(IMG, "splash_hd.jpg"), quality=90)
 
