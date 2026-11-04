@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#05060f">
+<title>Breakneck Baller</title>
+<style>
+  :root {
+    --bg:#05060f; --cyan:#7dfff0; --mag:#ff3df0; --orange:#ff8a1f; --gold:#ffd23f; --red:#ff4a3a; --green:#8dff6a;
+    --panel:rgba(8,10,28,.82);
+  }
+  * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html,body { margin:0; height:100%; overflow:hidden; background:#000; color:#fff;
+    font-family:"Trebuchet MS","Segoe UI",system-ui,sans-serif; touch-action:none;
+    user-select:none; -webkit-user-select:none; -webkit-touch-callout:none; overscroll-behavior:none; }
+  #stage { position:fixed; top:0; bottom:0; left:50%; transform:translateX(-50%); width:min(100vw,62vh); background:var(--bg); overflow:hidden; }
+  #stage::before { content:""; position:fixed; inset:0; z-index:-1; background:radial-gradient(circle at 50% 40%,#1a0b33,#000 70%); }
+  canvas { position:absolute; inset:0; width:100%; height:100%; display:block; }
+
+  /* ---------- HUD ---------- */
+  #hud { position:absolute; inset:0; pointer-events:none; opacity:0; transition:opacity .3s; }
+  body.playing #hud, body.paused #hud { opacity:1; }
+  #hudTop { position:absolute; top:max(10px,env(safe-area-inset-top)); left:12px; right:12px; display:flex; justify-content:space-between; align-items:flex-start; gap:8px; }
+  #hearts { font-size:26px; line-height:1; letter-spacing:2px; text-shadow:0 0 10px rgba(255,60,90,.8); }
+  #hearts .on { color:#ff3d5e; } #hearts .off { color:rgba(255,255,255,.18); }
+  #shield { width:112px; height:8px; margin-top:7px; border:1px solid rgba(125,255,240,.6); border-radius:5px; overflow:hidden; background:rgba(0,0,0,.4); }
+  #shieldFill { height:100%; width:100%; background:linear-gradient(90deg,#2bd9ff,#7dfff0); box-shadow:0 0 8px var(--cyan); transition:width .12s; }
+  #shield.low #shieldFill { background:linear-gradient(90deg,#ff8a1f,#ffd23f); }
+  #center { text-align:center; flex:1; }
+  #score { font-size:34px; font-weight:900; font-style:italic; letter-spacing:1px; text-shadow:0 0 14px rgba(125,255,240,.7); line-height:1; }
+  #combo { height:22px; margin-top:4px; font-weight:900; font-style:italic; font-size:17px; color:var(--gold); text-shadow:0 0 10px rgba(255,210,63,.8); }
+  #combo i { display:block; margin:2px auto 0; height:3px; width:70px; background:rgba(255,255,255,.15); border-radius:2px; overflow:hidden; }
+  #combo i b { display:block; height:100%; background:var(--gold); }
+  #right { display:flex; flex-direction:column; align-items:flex-end; gap:8px; }
+  #coins { font-weight:900; font-size:18px; color:var(--gold); text-shadow:0 0 8px rgba(255,210,63,.6); }
+  #pauseBtn { pointer-events:auto; width:38px; height:38px; border-radius:10px; border:2px solid rgba(255,255,255,.35); background:rgba(0,0,0,.35); color:#fff; font-size:15px; font-weight:900; cursor:pointer; }
+  #hint { position:absolute; left:50%; top:22%; transform:translateX(-50%) scale(.96); max-width:88%; text-align:center; padding:9px 16px; border-radius:12px;
+    background:rgba(5,8,25,.72); border:2px solid var(--cyan); font-weight:800; font-size:16px; letter-spacing:.3px; text-shadow:0 0 8px rgba(125,255,240,.6);
+    opacity:0; transition:opacity .2s, transform .2s; }
+  #hint.show { opacity:1; transform:translateX(-50%) scale(1); }
+  #popups { position:absolute; left:0; right:0; top:34%; height:0; pointer-events:none; }
+  .pop { position:absolute; left:50%; transform:translateX(-50%); white-space:nowrap; font-weight:900; font-style:italic; font-size:22px; letter-spacing:1px;
+    text-shadow:0 0 12px currentColor, 0 2px 0 rgba(0,0,0,.6); animation:rise 1s ease-out forwards; }
+  .pop.gold { color:var(--gold); } .pop.cyan { color:var(--cyan); } .pop.mag { color:var(--mag); } .pop.red { color:var(--red); } .pop.green { color:var(--green); }
+  .pop.big { font-size:30px; }
+  @keyframes rise { 0%{opacity:0; margin-top:14px; scale:.7} 15%{opacity:1; scale:1.12} 100%{opacity:0; margin-top:-70px; scale:1} }
+  #flash { position:absolute; inset:0; pointer-events:none; opacity:0; transition:opacity .35s ease-out; }
+  #flash.on { opacity:.55; transition:none; }
+  #dragHint { position:absolute; bottom:calc(22px + env(safe-area-inset-bottom)); left:0; right:0; text-align:center; font-size:13px; letter-spacing:3px; color:rgba(255,255,255,.55); pointer-events:none; opacity:0; transition:opacity .6s; }
+  #dragHint.show { opacity:1; }
+
+  /* ---------- touch buttons ---------- */
+  #controls { position:absolute; right:12px; bottom:calc(46px + env(safe-area-inset-bottom)); display:none; flex-direction:column; gap:12px; align-items:center; }
+  body.playing #controls { display:flex; }
+  #controls.lefty { right:auto; left:12px; }
+  .btn { --c:var(--cyan); position:relative; width:clamp(66px,19vw,86px); height:clamp(66px,19vw,86px); border-radius:50%; border:3px solid var(--c);
+    background:radial-gradient(circle at 50% 35%,rgba(255,255,255,.14),rgba(0,0,0,.45)); color:#fff; font:900 12px/1.1 "Trebuchet MS",system-ui,sans-serif; letter-spacing:.5px;
+    box-shadow:0 0 14px var(--c), inset 0 0 14px rgba(0,0,0,.6); text-shadow:0 0 8px var(--c); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px;
+    touch-action:none; cursor:pointer; padding:0; transition:transform .06s; }
+  .btn:active, .btn.down { transform:scale(.9); background:radial-gradient(circle at 50% 35%,var(--c),rgba(0,0,0,.4)); }
+  .btn svg { width:26px; height:26px; fill:none; stroke:currentColor; stroke-width:2.6; stroke-linecap:round; stroke-linejoin:round; }
+  #bJump { --c:var(--green); } #bDash { --c:var(--cyan); } #bSmash { --c:var(--mag); }
+  #pips { display:flex; gap:3px; height:7px; }
+  .pip { width:8px; height:7px; border-radius:2px; border:1px solid var(--cyan); background:transparent; overflow:hidden; }
+  .pip.full { background:var(--cyan); box-shadow:0 0 6px var(--cyan); }
+  .pip.chg::after { content:""; display:block; height:100%; width:calc(var(--p)*100%); background:rgba(125,255,240,.65); }
+  .btn.empty { opacity:.55; }
+
+  /* ---------- screens ---------- */
+  .screen { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:12px; padding:24px 20px; text-align:center;
+    background:linear-gradient(180deg,rgba(5,6,15,.72),rgba(5,6,15,.55) 55%,rgba(5,6,15,.8)); z-index:5; }
+  .screen.hidden { display:none; }
+  .logo { margin:0; font-size:clamp(38px,12.5vw,66px); line-height:.92; font-weight:900; font-style:italic; letter-spacing:1px; text-transform:uppercase; }
+  .logo span { display:block; }
+  .logo span:first-child { color:#fff; text-shadow:0 0 18px var(--cyan), 0 0 40px rgba(125,255,240,.5); }
+  .logo span:last-child { background:linear-gradient(90deg,var(--orange),var(--mag)); -webkit-background-clip:text; background-clip:text; color:transparent; filter:drop-shadow(0 0 14px rgba(255,61,240,.6)); }
+  .tag { margin:0 0 6px; letter-spacing:4px; font-size:12px; text-transform:uppercase; color:rgba(255,255,255,.7); }
+  .stats { display:flex; gap:26px; font-size:13px; letter-spacing:2px; color:rgba(255,255,255,.7); margin-bottom:6px; }
+  .stats b { display:block; font-size:24px; color:#fff; letter-spacing:1px; }
+  .stats b.gold { color:var(--gold); }
+  button.big, button.alt, button.mini { font:inherit; cursor:pointer; border-radius:14px; text-transform:uppercase; font-weight:900; font-style:italic; letter-spacing:2px; color:#fff; }
+  button.big { font-size:26px; padding:14px 54px; border:3px solid var(--orange); background:linear-gradient(180deg,rgba(255,138,31,.45),rgba(255,61,240,.3)); box-shadow:0 0 22px rgba(255,138,31,.7); animation:pulse 1.6s ease-in-out infinite; }
+  button.alt { font-size:15px; padding:10px 28px; border:2px solid var(--cyan); background:rgba(0,0,0,.4); box-shadow:0 0 12px rgba(125,255,240,.35); }
+  button.mini { font-size:11px; padding:7px 12px; border:1px solid rgba(255,255,255,.35); background:rgba(0,0,0,.4); letter-spacing:1.5px; }
+  button:active { transform:scale(.96); }
+  @keyframes pulse { 50% { box-shadow:0 0 36px rgba(255,138,31,1); } }
+  .row { display:flex; gap:10px; }
+  .how { margin:8px 0 0; font-size:12px; line-height:1.7; letter-spacing:1px; color:rgba(255,255,255,.6); max-width:300px; }
+  .how b { color:var(--cyan); } .how b.g { color:var(--green); } .how b.m { color:var(--mag); }
+  h2 { margin:0; font-size:30px; font-style:italic; letter-spacing:3px; color:var(--cyan); text-shadow:0 0 14px var(--cyan); }
+  #shopList { width:100%; max-width:340px; display:flex; flex-direction:column; gap:10px; }
+  .up { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:10px 12px; border:1px solid rgba(125,255,240,.4); border-radius:12px; background:rgba(0,0,0,.45); text-align:left; }
+  .up strong { display:block; font-size:15px; letter-spacing:1px; } .up small { color:rgba(255,255,255,.6); font-size:12px; }
+  .up .lv { font-size:11px; letter-spacing:2px; color:var(--cyan); }
+  .up button { min-width:78px; padding:8px 10px; border-radius:10px; border:2px solid var(--gold); background:rgba(255,210,63,.15); color:var(--gold); font:900 14px inherit; cursor:pointer; }
+  .up button:disabled { border-color:rgba(255,255,255,.2); color:rgba(255,255,255,.35); background:transparent; cursor:default; }
+  #overTitle { margin:0; font-size:44px; font-style:italic; font-weight:900; letter-spacing:2px; color:var(--red); text-shadow:0 0 20px var(--red); }
+  #overScore { font-size:56px; font-weight:900; font-style:italic; line-height:1; text-shadow:0 0 20px var(--cyan); }
+  #overNew { color:var(--gold); font-weight:900; letter-spacing:4px; font-size:14px; min-height:18px; text-shadow:0 0 10px var(--gold); }
+  .grid { display:grid; grid-template-columns:repeat(3,1fr); gap:12px 22px; font-size:11px; letter-spacing:2px; color:rgba(255,255,255,.65); }
+  .grid b { display:block; font-size:20px; color:#fff; letter-spacing:1px; }
+  #pauseCard h2 { color:#fff; text-shadow:0 0 14px var(--mag); }
+  #noWebgl { color:var(--red); }
+</style>
+</head>
+<body>
+<div id="stage">
+  <canvas id="c"></canvas>
+
+  <div id="hud">
+    <div id="hudTop">
+      <div><div id="hearts"></div><div id="shield"><div id="shieldFill"></div></div></div>
+      <div id="center"><div id="score">0</div><div id="combo"></div></div>
+      <div id="right"><div id="coins">0</div><button id="pauseBtn" aria-label="Pause">❚❚</button></div>
+    </div>
+    <div id="hint"></div>
+    <div id="popups"></div>
+    <div id="dragHint">◀ &nbsp; DRAG TO STEER &nbsp; ▶</div>
+  </div>
+  <div id="flash"></div>
+
+  <div id="controls">
+    <button class="btn" id="bJump" aria-label="Jump">
+      <svg viewBox="0 0 24 24"><path d="M12 20V5M6 11l6-6 6 6"/></svg><span>JUMP</span></button>
+    <button class="btn" id="bDash" aria-label="Dash">
+      <svg viewBox="0 0 24 24"><path d="M4 7l7 5-7 5M13 7l7 5-7 5"/></svg><span>DASH</span><div id="pips"></div></button>
+    <button class="btn" id="bSmash" aria-label="Slam or slide">
+      <svg viewBox="0 0 24 24"><path d="M12 3v13M6 11l6 6 6-6M4 21h16"/></svg><span>SLAM<br>SLIDE</span></button>
+  </div>
+
+  <section id="menu" class="screen">
+    <h1 class="logo"><span>Breakneck</span><span>Baller</span></h1>
+    <p class="tag">Smash &middot; Slide &middot; Don't stop</p>
+    <div class="stats"><div>BEST<b id="mBest">0</b></div><div>COINS<b class="gold" id="mCoins">0</b></div></div>
+    <button class="big" id="playBtn">Play</button>
+    <button class="alt" id="upBtn">Upgrades</button>
+    <div class="row"><button class="mini" id="handBtn"></button><button class="mini" id="muteBtn"></button></div>
+    <p class="how">Drag to <b class="g">steer</b> &middot; <b class="g">JUMP</b> twice to float<br><b>DASH</b> through glowing glass &middot; <b class="m">SLAM</b> from above, <b class="m">SLIDE</b> under gates<br>Solid red brick &amp; spikes are deadly</p>
+    <p class="how" id="noWebgl" style="display:none">WebGL isn't available in this browser.</p>
+  </section>
+
+  <section id="shop" class="screen hidden">
+    <h2>Upgrades</h2>
+    <div class="stats"><div>COINS<b class="gold" id="sCoins">0</b></div></div>
+    <div id="shopList"></div>
+    <button class="alt" id="shopBack">Back</button>
+  </section>
+
+  <section id="over" class="screen hidden">
+    <h2 id="overTitle">CRASHED</h2>
+    <div id="overScore">0</div>
+    <div id="overNew"></div>
+    <div class="grid">
+      <div>DISTANCE<b id="oDist">0</b></div><div>SMASHES<b id="oSmash">0</b></div><div>COINS<b id="oCoins">0</b></div>
+      <div>BEST COMBO<b id="oCombo">0</b></div><div>BEST<b id="oBest">0</b></div><div>BANK<b id="oBank">0</b></div>
+    </div>
+    <button class="big" id="againBtn">Run again</button>
+    <button class="alt" id="menuBtn">Menu</button>
+  </section>
+
+  <section id="pause" class="screen hidden" style="background:rgba(5,6,15,.85)">
+    <h2 style="color:#fff">PAUSED</h2>
+    <button class="big" id="resumeBtn">Resume</button>
+    <div class="row"><button class="mini" id="handBtn2"></button><button class="mini" id="muteBtn2"></button></div>
+    <button class="alt" id="quitBtn">Quit run</button>
+  </section>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="game.js"></script>
+</body>
+</html>

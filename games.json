@@ -1,5 +1,13 @@
 [
   {
+    "id": "breakneck-baller",
+    "title": "Breakneck Baller",
+    "tagline": "Neon vector ball runner. Dash through glass, slide gates, hop lava, ride speed tubes.",
+    "path": "breakneck-baller/",
+    "added": "2026-11-04",
+    "thumb": "breakneck-baller/thumb.png"
+  },
+  {
     "id": "rollabout",
     "title": "Rollabout",
     "tagline": "You're a ball. Smash blocks, swing on chains, squash bugs, beat three bosses.",
