@@ -296,7 +296,7 @@ class Mossback {
   }
   defeat() {
     this.state = 'defeated'; this.tm = 4; this.alive = false; const S = W.S;
-    S.boss = true; S.frags++; S.cores++; S.items.core_boss = true; W.sfx('fanfare'); W.sfx('roar', .5); W.shake(.7); W.ui.bossBar(false);
+    W.happyT = 4; S.boss = true; S.frags++; S.cores++; S.items.core_boss = true; W.sfx('fanfare'); W.sfx('roar', .5); W.shake(.7); W.ui.bossBar(false);
     this.R.lockDoors(false); this.R.buildMesh(); W.music.setStyle('cave');
     W.ui.banner('Old Mossback is dazed!', 'He will join the Landing as your helper. You earned a Seed Fragment and a Power Core.', '#88e05a');
     for (let i = 0; i < 2; i++) { const id = 'p_boss' + i; if (!S.items[id]) W.world.items.push(new W.Item({ t:'pearl', id, x:15 + i * 4, y:this.R.fy + 1.2, z:20 })); }

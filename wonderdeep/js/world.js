@@ -274,10 +274,10 @@ class Item {
   touch() {
     const S = W.S, d = this.def, ui = W.ui;
     if (this.t === 'ability') {
-      S.abilities[d.id] = true; S.wheel = d.id === 'hop' || d.id === 'kick' || d.id === 'bubble' ? S.wheel : d.id; this.remove(); W.sfx('fanfare'); W.sfx(d.id === 'hop' ? 'hop' : d.id === 'dash' ? 'dash' : d.id === 'roll' ? 'roll' : 'kick');
+      W.happyT = 3; S.abilities[d.id] = true; S.wheel = d.id === 'hop' || d.id === 'kick' || d.id === 'bubble' ? S.wheel : d.id; this.remove(); W.sfx('fanfare'); W.sfx(d.id === 'hop' ? 'hop' : d.id === 'dash' ? 'dash' : d.id === 'roll' ? 'roll' : 'kick');
       const a = W.ABILITIES[d.id]; ui.banner('NEW ABILITY: ' + a.name, a.desc, a.color); W.bit.say('ab_' + d.id, true); W.writeAuto(); W.hudPing();
     } else if (this.t === 'pearl') {
-      const old = W.maxHearts(S); S.items[d.id] = true; this.remove(); W.sfx('pearl'); W.bit.say('pearl');
+      const old = W.maxHearts(S); S.items[d.id] = true; this.remove(); W.sfx('pearl'); W.bit.say('pearl'); W.happyT = 1.6;
       const mx = W.maxHearts(S); if (mx > old) { S.hearts = mx; ui.banner('Heart Pearls: +1 heart!', '4 pearls grant a new heart.', '#ff7ad9'); } else ui.toast(`Heart Pearl ${W.pearls(S) % 4 || 4}/4`);
       W.hudPing();
     } else if (this.t === 'token') { if (!d.temp) S.items[d.id] = true; S.tokens += 3; this.remove(); W.sfx('pickup'); ui.toast('+3 Twist Tokens'); W.bit.say('token'); }

@@ -46,3 +46,10 @@ Layout: `js/data.js` rooms + enemy data, `engine.js` input/audio/save, `world.js
 * Twist events: Paper World (Crouch slips behind paper walls), Reverse Run (mandatory: outrun the dark, or pay 25 tokens at the Tide Gate), Bouncy Cavern.
 * Things that block your view (pillars, ceilings, decor) now dither away around Nova. Toggle under Options > See through blockers.
 * New hats, badges and a map that covers both biomes.
+
+## Added in v4: character animation pass
+* Nova is rebuilt as a hip-pivoted rig (legs, leaning upper body, neck-pivot head) and posed procedurally each frame, with every pose blended instead of snapped.
+* Run cycle scales with speed, leans into acceleration and turns, skids on quick reversals, kicks up dust.
+* Jump stretch, landing squash on a spring, hard-landing roll, double-hop somersault, wall-kick twist, ledge mantle, ground-pound dive, dash lean.
+* Aim arm with recoil, charge pose, float, swim stroke, crouch, sleepy idle with fidgets, head tracks Bit.
+* Eight expressions plus blinking. Cape, hat and antenna follow through on springs.
