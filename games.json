@@ -1,5 +1,13 @@
 [
   {
+    "id": "chain-reaction-lab",
+    "title": "Chain Reaction Lab",
+    "tagline": "Rube Goldberg physics puzzles. Springs, magnets, belts, fans and gears. Build and share your own levels.",
+    "path": "chain-reaction-lab/",
+    "added": "2026-11-05",
+    "thumb": "chain-reaction-lab/thumb.png"
+  },
+  {
     "id": "breakneck-baller",
     "title": "Breakneck Baller",
     "tagline": "Neon vector ball runner. Dash through glass, slide gates, hop lava, ride speed tubes.",
