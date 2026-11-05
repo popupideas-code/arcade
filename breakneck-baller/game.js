@@ -15,6 +15,8 @@ const STEP = 1 / 90, LOOK = 190, SEG = 40, TILE = 2;
 const TUBE_R = 4.6, TUBE_BOOST = 1.45, TJUMP_V = 12.5, TJUMP2_V = 12;   // speed-tube radius, speed multiplier, radial jump speeds
 const FALL_H = 28;
 const STYLE_EVERY = (() => { try { const n = Number(new URLSearchParams(location.search).get('gate')); return n >= 100 ? n : 5000; } catch (e) { return 5000; } })();   // metres between style-shift walls
+const PLAT_T = 0.6, STEP_TOL = 0.35, STEP_H = 1.25, SPRING_V = 26;      // platforms: slab thickness, auto-step height, rise per stair, spring launch speed
+const CANNON_V = 15, CANNON_CHARGE = 0.9;
 const LAVA_STIFF = 55, LAVA_DAMP = 8;                                  // slippery obsidian: steering overshoots a little                                                    // height meteors drop from
 
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -307,7 +309,7 @@ const matFloor = new THREE.MeshBasicMaterial({ map: gridTex });
 const matBrick = new THREE.MeshBasicMaterial({ map: brickTex });
 const matStripe = new THREE.MeshBasicMaterial({ map: stripeTex });
 const matSmash = new THREE.MeshBasicMaterial({ map: hatchTex, color: 0x59e8ff, transparent: true, opacity: 0.5, depthWrite: false, blending: THREE.AdditiveBlending });
-const matWall = new THREE.MeshBasicMaterial({ color: 0x0a1a3a });
+const matWall = new THREE.MeshBasicMaterial({ color: 0x0a1a3a, side: THREE.DoubleSide });
 const matBuilding = new THREE.MeshBasicMaterial({ color: 0x070818 });
 const matSpike = new THREE.MeshBasicMaterial({ color: 0x3a0a10 });
 const lineLethal = new THREE.LineBasicMaterial({ color: 0xff5a3c });
@@ -345,6 +347,31 @@ const matChevLava = new THREE.MeshBasicMaterial({ map: chevTex, color: 0xff5a1a,
 const matBubble = new THREE.MeshBasicMaterial({ color: 0xff8a2a, transparent: true, opacity: 0.4, blending: THREE.AdditiveBlending, depthWrite: false });
 const matBubbleWire = new THREE.MeshBasicMaterial({ color: 0xffd060, wireframe: true, transparent: true, opacity: 0.7 });
 const bubbleGeo = new THREE.SphereGeometry(0.9, 14, 10);
+const matPlat = new THREE.MeshBasicMaterial({ color: 0x1d2a3a });
+const linePlat = new THREE.LineBasicMaterial({ color: 0x8dff6a });
+const matSpringPad = new THREE.MeshBasicMaterial({ color: 0xffd23f });
+const lineSpring = new THREE.LineBasicMaterial({ color: 0xfff2a0 });
+const springBaseGeo = new THREE.CylinderGeometry(1.0, 1.0, 0.16, 14);
+const springCoilGeo = (() => { const pts = []; for (let i = 0; i < 7; i++) { const a0 = i * 1.2, a1 = (i + 1) * 1.2, y0 = 0.16 + i * 0.07, y1 = 0.16 + (i + 1) * 0.07; pts.push(Math.cos(a0) * 0.5, y0, Math.sin(a0) * 0.5, Math.cos(a1) * 0.5, y1, Math.sin(a1) * 0.5); } return new THREE.BufferGeometry().setAttribute('position', new THREE.Float32BufferAttribute(pts, 3)); })();
+const matChevLime = new THREE.MeshBasicMaterial({ map: chevTex, color: 0xb8ff5a, transparent: true, opacity: 0.9, depthWrite: false, blending: THREE.AdditiveBlending });
+const matMetal = new THREE.MeshBasicMaterial({ color: 0x252b36 });
+const barrelGeo = new THREE.CylinderGeometry(0.42, 0.5, 1.5, 10).rotateZ(Math.PI / 2);
+const sawGeo = new THREE.CylinderGeometry(1, 1, 0.3, 16).rotateX(Math.PI / 2), sawRimGeo = new THREE.TorusGeometry(1, 0.11, 6, 20);
+const matSawFill = new THREE.MeshBasicMaterial({ color: 0x2a1308 });
+const matOrb = new THREE.MeshBasicMaterial({ color: 0xff5a2a, transparent: true, opacity: 0.92 });
+const matOrbWire = new THREE.MeshBasicMaterial({ color: 0xffe0a0, wireframe: true });
+const sightMat = new THREE.MeshBasicMaterial({ color: 0xff3b2e, transparent: true, opacity: 0.8, blending: THREE.AdditiveBlending, depthWrite: false });   // laser sight beam
+const muzzleRingGeo = new THREE.TorusGeometry(0.5, 0.09, 6, 14).rotateY(Math.PI / 2), matMuzzleRing = new THREE.MeshBasicMaterial({ color: 0xff8a2a });
+const crushPadGeo = new THREE.PlaneGeometry(2.6, 2.6).rotateX(-Math.PI / 2);
+const matRoller = new THREE.MeshBasicMaterial({ color: 0x2a0a10 }), matRollerWire = new THREE.MeshBasicMaterial({ color: 0xff3b2e, wireframe: true });
+const matHopper = new THREE.MeshBasicMaterial({ color: 0x0f3a22 }), matHopperWire = new THREE.MeshBasicMaterial({ color: 0x7dff6a, wireframe: true });
+const decorMats = [0, 1, 2].map(() => new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.5, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide }));
+const beamMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.07, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide });
+const beamGeo = new THREE.ConeGeometry(2.4, 48, 12, 1, true).translate(0, 24, 0);
+const dustN = 160, dustGeo = new THREE.BufferGeometry();
+dustGeo.setAttribute('position', new THREE.Float32BufferAttribute(Array.from({ length: dustN * 3 }, (_, i) => i % 3 === 0 ? rnd(-16, 16) : i % 3 === 1 ? rnd(0.3, 10) : rnd(-80, 14)), 3));
+const dustMat = new THREE.PointsMaterial({ color: 0xffffff, size: 2.4, sizeAttenuation: false, transparent: true, opacity: 0.55, blending: THREE.AdditiveBlending, depthWrite: false, fog: false });
+const dust = new THREE.Points(dustGeo, dustMat); dust.frustumCulled = false; scene.add(dust);
 const signMat = new THREE.SpriteMaterial({ map: slideSignTex, transparent: true, depthWrite: false });
 const styleSignTex = textTex('\u00BB STYLE SHIFT \u00AB', '#ffffff', 640, 128, 'italic 900 62px "Trebuchet MS", Arial, sans-serif');
 const matPrism = new THREE.MeshBasicMaterial({ map: hatchTex, color: 0xffffff, transparent: true, opacity: 0.6, depthWrite: false, blending: THREE.AdditiveBlending });
@@ -372,6 +399,7 @@ function boxGeo(w, h, d) {
 }
 const unitBox = new THREE.BoxGeometry(1, 1, 1);
 const unitEdges = new THREE.EdgesGeometry(unitBox);
+const unitPlane = new THREE.PlaneGeometry(1, 1), unitPlaneEdges = new THREE.EdgesGeometry(unitPlane);
 const spikeGeo = new THREE.ConeGeometry(0.46, 1, 4); spikeGeo.translate(0, 0.5, 0); spikeGeo.rotateY(Math.PI / 4);
 const spikeEdges = new THREE.EdgesGeometry(spikeGeo);
 const coinGeo = new THREE.CylinderGeometry(0.34, 0.34, 0.07, 14); coinGeo.rotateX(Math.PI / 2);
@@ -469,6 +497,7 @@ function applyPalette(d) {
   setC(buildingLines[0].color, cur.a); setC(buildingLines[1].color, cur.b); setC(buildingLines[2].color, cur.c);
   matBuilding.color.setRGB(cur.bot[0] * 0.16 + 0.01, cur.bot[1] * 0.16 + 0.01, cur.bot[2] * 0.16 + 0.02);
   setC(sun.material.color, cur.tint); sun.material.opacity = cur.sun; moon.material.opacity = cur.moon; stars.material.opacity = cur.stars;
+  setC(decorMats[0].color, cur.a); setC(decorMats[1].color, cur.b); setC(decorMats[2].color, cur.c); setC(beamMat.color, cur.b); setC(dustMat.color, cur.c);
   paintDome();
   if (post.mat) {                                  // watercolor paper: warm in the sun's tint, cool and darker at night
     const night = clamp(cur.moon, 0, 1) * 0.8;
@@ -491,6 +520,7 @@ function placeStreak(s, ahead) {
 
 const shardGeo = new THREE.BoxGeometry(0.3, 0.05, 0.2);
 const shardMats = {
+  green: new THREE.MeshBasicMaterial({ color: 0x7dff6a }),
   cyan: new THREE.MeshBasicMaterial({ color: 0x9ffff4 }), red: new THREE.MeshBasicMaterial({ color: 0xff5a3c }),
   gold: new THREE.MeshBasicMaterial({ color: 0xffd23f }), mag: new THREE.MeshBasicMaterial({ color: 0xff3df0 }),
   orange: new THREE.MeshBasicMaterial({ color: 0xff8a1f }), white: new THREE.MeshBasicMaterial({ color: 0xffffff }),
@@ -548,30 +578,44 @@ function updateWaves(dt) {
 /* world: entities, boxes, items, floor segments                          */
 /* ===================================================================== */
 const world = {
-  ents: [], boxes: [], items: [], enemies: [], holes: [], hints: [], segs: [], tubes: [], falls: [], bubbles: [],
+  ents: [], boxes: [], items: [], enemies: [], holes: [], hints: [], segs: [], tubes: [], falls: [], bubbles: [], plats: [], cannons: [], hazards: [], wallOver: [], blinkers: [], beams: [],
   genD: 0, segD: 0, patCount: 0, nextStyleD: STYLE_EVERY, intro: [], sinceBreather: 0, lastType: '', time: 0, cullT: 0, attract: true,
 };
 
 function clearWorld() {
   for (const e of world.ents.slice()) removeEnt(e);
-  for (const it of world.items) scene.remove(it.m);
+  for (const it of world.items) { scene.remove(it.m); if (it.k !== 'coin') it.m.material.dispose(); }
   for (const s of world.segs) removeSeg(s);
-  world.ents.length = world.boxes.length = world.items.length = world.enemies.length = world.holes.length = world.hints.length = world.segs.length = world.tubes.length = world.falls.length = world.bubbles.length = 0;
+  world.ents.length = world.boxes.length = world.items.length = world.enemies.length = world.holes.length = world.hints.length = world.segs.length = world.tubes.length = world.falls.length = world.bubbles.length = world.plats.length = world.cannons.length = world.hazards.length = world.wallOver.length = world.blinkers.length = world.beams.length = 0;
   for (const s of shards) s.m.visible = false;
   for (const w of waves) w.m.visible = false;
+}
+const ownG = (g) => { g.userData.own = true; return g; };
+const ownM = (m) => { m.userData.own = true; return m; };
+const mbm = (o) => ownM(new THREE.MeshBasicMaterial(o));
+const sphG = (r, w, h) => ownG(new THREE.SphereGeometry(r, w, h));
+const bufG = (arr) => ownG(new THREE.BufferGeometry().setAttribute('position', new THREE.Float32BufferAttribute(arr, 3)));
+function disposeTree(root) {
+  root.traverse((o) => {
+    if (o.geometry && o.geometry.userData && o.geometry.userData.own) o.geometry.dispose();
+    const m = o.material; if (m && (o.isSprite || (m.userData && m.userData.own))) m.dispose();
+  });
 }
 function newEnt(d) {
   const group = new THREE.Group(); group.position.z = -d; scene.add(group);
   const e = { group, d, dEnd: d, geos: [], mats: [] }; world.ents.push(e); return e;
 }
 function removeEnt(e) {
-  scene.remove(e.group);
+  scene.remove(e.group); disposeTree(e.group);
   e.geos.forEach((g) => g.dispose()); e.mats.forEach((m) => m.dispose());
   world.ents = world.ents.filter((q) => q !== e);
   world.falls = world.falls.filter((f) => f.e !== e);
   world.bubbles = world.bubbles.filter((b) => b.e !== e);
   world.boxes = world.boxes.filter((b) => b.e !== e);
   world.enemies = world.enemies.filter((q) => q.e !== e);
+  world.plats = world.plats.filter((q) => q.e !== e);
+  world.cannons = world.cannons.filter((q) => q.e !== e);
+  world.hazards = world.hazards.filter((q) => q.e !== e);
 }
 function mkBox(kind, w, h, d, parent) {
   const g = boxGeo(w, h, d);
@@ -590,7 +634,7 @@ function addBox(e, t, kind, x, y, dd, w, h, len, extra) {
   return b;
 }
 function coin(x, y, d) {
-  const m = new THREE.Mesh(coinGeo, matCoin); m.add(new THREE.LineSegments(coinEdges, lineCoin));
+  const m = new THREE.Mesh(coinGeo, matCoin);
   m.position.set(x, y, -d); scene.add(m);
   world.items.push({ k: 'coin', x, y, d, m, ph: Math.random() * 6 });
 }
@@ -607,10 +651,69 @@ function chevrons(e, d0, len, mat) {
 }
 
 /* ---- floor / wall segments ---- */
-function removeSeg(s) { scene.remove(s.group); s.geos.forEach((g) => g.dispose()); }
+function mergeBoxes(list) {
+  const pos = [], idx = [], edge = [], tri = [[0, 1, 2], [0, 2, 3], [4, 6, 5], [4, 7, 6], [0, 4, 5], [0, 5, 1], [3, 2, 6], [3, 6, 7], [0, 3, 7], [0, 7, 4], [1, 5, 6], [1, 6, 2]];
+  const ed = [[0, 1], [1, 2], [2, 3], [3, 0], [4, 5], [5, 6], [6, 7], [7, 4], [0, 4], [1, 5], [2, 6], [3, 7]];
+  for (const b of list) {
+    const x0 = b.x - b.w / 2, x1 = b.x + b.w / 2, y0 = b.y - b.h / 2, y1 = b.y + b.h / 2, z0 = b.z - b.d / 2, z1 = b.z + b.d / 2, base = pos.length / 3;
+    const c = [[x0, y0, z0], [x1, y0, z0], [x1, y1, z0], [x0, y1, z0], [x0, y0, z1], [x1, y0, z1], [x1, y1, z1], [x0, y1, z1]];
+    c.forEach((v) => pos.push(v[0], v[1], v[2])); tri.forEach((t) => idx.push(base + t[0], base + t[1], base + t[2]));
+    ed.forEach(([a, e]) => edge.push(...c[a], ...c[e]));
+  }
+  const g = new THREE.BufferGeometry().setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setIndex(idx);
+  return { fill: g, edges: new THREE.BufferGeometry().setAttribute('position', new THREE.Float32BufferAttribute(edge, 3)) };
+}
+function removeSeg(s) {
+  scene.remove(s.group); s.geos.forEach((g) => g.dispose()); s.mats.forEach((m) => m.dispose());
+  world.blinkers = world.blinkers.filter((b) => b.seg !== s); world.beams = world.beams.filter((b) => b.seg !== s);
+}
+/** wall height varies slowly along the track; patterns can force it taller (cannons) via world.wallOver */
+function wallH(d, side) {
+  let h = 1.8 + 1.5 * Math.sin(d * 0.0113 + side * 1.7) + 0.9 * Math.sin(d * 0.0291 + 0.6 + side);
+  h = Math.round(clamp(h, 1.0, 4.6) * 2) / 2;
+  for (const o of world.wallOver) if (d >= o.d0 && d <= o.d1) h = Math.max(h, o.h);
+  return h;
+}
+function decorate(seg, a, b) {
+  const add = (m) => seg.group.add(m);
+  const lineGeo = (pts) => { const g = new THREE.BufferGeometry().setAttribute('position', new THREE.Float32BufferAttribute(pts, 3)); seg.geos.push(g); return g; };
+  // gantry arch with a row of lights (skipped over stairs so it never clips the climb)
+  if (Math.random() < 0.22 && !world.plats.some((p) => p.d1 > a - 6 && p.d0 < b + 6)) {
+    const H = 14, dz = a + rnd(8, SEG - 8), pg = boxGeo(0.7, H, 0.7), bg = boxGeo(W + 3, 0.7, 1.0);
+    for (const sx of [-1, 1]) { const m = new THREE.Mesh(pg, matBuilding); m.position.set(sx * (HALF + 1.1), H / 2, -dz); m.add(new THREE.LineSegments(pg.userData.edges, buildingLines[1])); add(m); }
+    const bm = new THREE.Mesh(bg, matBuilding); bm.position.set(0, H, -dz); bm.add(new THREE.LineSegments(bg.userData.edges, buildingLines[0])); add(bm);
+    const lm = mergeBoxes(Array.from({ length: 7 }, (_, i) => ({ x: -HALF - 0.4 + i * ((W + 0.8) / 6), y: H - 0.5, z: -dz, w: 0.55, h: 0.25, d: 0.55 }))); seg.geos.push(lm.fill, lm.edges); add(new THREE.Mesh(lm.fill, decorMats[0]));
+  }
+  for (const side of [-1, 1]) {
+    if (Math.random() < 0.45) {                                           // holographic billboard
+      const w = rnd(3, 5), h = rnd(2, 3.2), k = Math.floor(rnd(0, 3));
+      const bm = new THREE.Mesh(unitPlane, decorMats[k]); bm.scale.set(w, h, 1);
+      bm.position.set(side * (HALF + rnd(3.5, 7)), rnd(4.5, 9), -(a + rnd(0, SEG))); bm.rotation.y = side < 0 ? Math.PI / 2 - 0.35 : -Math.PI / 2 + 0.35;
+      const gl = [-0.5, -0.5, 0.01, 0.5, -0.5, 0.01, 0.5, -0.5, 0.01, 0.5, 0.5, 0.01, 0.5, 0.5, 0.01, -0.5, 0.5, 0.01, -0.5, 0.5, 0.01, -0.5, -0.5, 0.01];
+      for (let i = 0; i < 3; i++) { const y = rnd(-0.35, 0.35), x0 = rnd(-0.4, 0), x1 = rnd(0.05, 0.4); gl.push(x0, y, 0.01, x1, y, 0.01); }
+      bm.add(new THREE.LineSegments(lineGeo(gl), buildingLines[k])); add(bm);
+    }
+    if (Math.random() < 0.5) {                                            // pylon with a blinking light
+      const H = rnd(8, 20), px = side * (HALF + rnd(2, 9)), pz = a + rnd(0, SEG), k = Math.floor(rnd(0, 3));
+      const m = new THREE.LineSegments(unitEdges, buildingLines[k]); m.scale.set(0.35, H, 0.35); m.position.set(px, H / 2, -pz); add(m);
+      const sp = sprite(glowOrange, 2.6); seg.mats.push(sp.material); sp.position.set(px, H + 0.3, -pz); add(sp);
+      world.blinkers.push({ s: sp, ph: rnd(0, 6.3), seg });
+    }
+    if (Math.random() < 0.2) {                                            // sweeping searchlight
+      const m = new THREE.Mesh(beamGeo, beamMat); m.position.set(side * (HALF + rnd(6, 16)), 0, -(a + rnd(0, SEG))); m.rotation.z = -side * 0.35; add(m);
+      world.beams.push({ m, ph: rnd(0, 6.3), a0: -side * 0.35, seg });
+    }
+    if (Math.random() < 0.12) {                                           // distant spire
+      const h = rnd(40, 62), m = new THREE.LineSegments(unitEdges, buildingLines[2]); m.scale.set(1.4, h, 1.4);
+      m.position.set(side * (HALF + rnd(14, 34)), h / 2, -(a + rnd(0, SEG))); add(m);
+    }
+  }
+  const dash = []; for (let z = 0; z < SEG; z += 4) for (const sx of [-1, 1]) dash.push(sx * (HALF - 0.03), 0.07, -(a + z), sx * (HALF - 0.03), 0.07, -(a + z + 2));
+  add(new THREE.LineSegments(lineGeo(dash), buildingLines[1]));          // dashed light strip along both wall bases
+}
 function buildSegment(a) {
   const b = a + SEG;
-  const seg = { a, b, group: new THREE.Group(), geos: [] };
+  const seg = { a, b, group: new THREE.Group(), geos: [], mats: [] };
   scene.add(seg.group);
   const piece = (x0, x1, d0, d1) => {
     if (x1 - x0 < 0.05 || d1 - d0 < 0.05) return;
@@ -637,13 +740,16 @@ function buildSegment(a) {
   }
   if (cur < b) piece(-HALF, HALF, cur, b);
 
-  for (const side of [-1, 1]) {                         // side walls with ticks
-    const g = boxGeo(0.6, 1.8, SEG);
-    const m = new THREE.Mesh(g, matWall); m.position.set(side * (HALF + 0.3), 0.9, -(a + b) / 2);
-    m.add(new THREE.LineSegments(g.userData.edges, lineWall)); seg.group.add(m);
-    const pts = [];
-    for (let z = 0; z < SEG; z += 5) pts.push(side * HALF, 0, -(a + z), side * HALF, 1.8, -(a + z));
-    const lg = new THREE.BufferGeometry().setAttribute('position', new THREE.Float32BufferAttribute(pts, 3));
+  for (const side of [-1, 1]) {                         // side walls (varying height) with ticks
+    const ticks = [], blocks = [];
+    for (let i = 0; i < SEG / 10; i++) {
+      const dm = a + 5 + i * 10, h = wallH(dm, side);
+      blocks.push({ x: side * (HALF + 0.3), y: h / 2, z: -dm, w: 0.6, h, d: 10 });
+      for (const z of [0, 5]) { const hh = wallH(dm - 5 + z, side); ticks.push(side * HALF, 0, -(dm - 5 + z), side * HALF, hh, -(dm - 5 + z)); }
+    }
+    const mb = mergeBoxes(blocks); seg.geos.push(mb.fill, mb.edges);          // the whole wall run is one mesh + one outline
+    const wm = new THREE.Mesh(mb.fill, matWall); wm.add(new THREE.LineSegments(mb.edges, lineWall)); seg.group.add(wm);
+    const lg = new THREE.BufferGeometry().setAttribute('position', new THREE.Float32BufferAttribute(ticks, 3));
     seg.geos.push(lg); seg.group.add(new THREE.LineSegments(lg, lineWall));
     for (let i = 0; i < 2; i++) {                       // distant skyline
       const w = rnd(4, 10), h = rnd(6, 34), dp = rnd(6, 14);
@@ -652,6 +758,7 @@ function buildSegment(a) {
       bm.add(new THREE.LineSegments(unitEdges, pick(buildingLines))); seg.group.add(bm);
     }
   }
+  decorate(seg, a, b);
   world.segs.push(seg);
 }
 function hasFloor(x, d) {
@@ -663,6 +770,14 @@ function hasFloor(x, d) {
   }
   return true;
 }
+/** the platform (if any) whose top the ball's feet can stand on: top no more than STEP_TOL above the feet */
+function platSupport(x, d, bottom) {
+  let best = null;
+  for (const p of world.plats) {
+    if (d > p.d0 && d < p.d1 && x > p.x0 - 0.25 && x < p.x1 + 0.25 && p.top <= bottom + STEP_TOL && (!best || p.top > best.top)) best = p;
+  }
+  return best;
+}
 function lavaAt(d) { for (const h of world.holes) if (h.lava && d > h.d0 && d < h.d1) return h; return null; }
 function stoneAt(x, d) { const h = lavaAt(d); return h ? (h.stones.find((s) => d > s.d0 && d < s.d1 && x > s.x0 && x < s.x1) || null) : null; }
 
@@ -671,39 +786,61 @@ function stoneAt(x, d) { const h = lavaAt(d); return h ? (h.stones.find((s) => d
 /* ===================================================================== */
 function makeBeetle() {
   const g = new THREE.Group();
-  const dome = new THREE.Mesh(domeGeo, new THREE.MeshBasicMaterial({ color: 0x1a0b2e })); dome.scale.set(1, 0.8, 1.15);
-  const wire = new THREE.Mesh(domeGeo, new THREE.MeshBasicMaterial({ color: 0xff3df0, wireframe: true })); wire.scale.set(1.02, 0.82, 1.17);
+  const dome = new THREE.Mesh(domeGeo, mbm({ color: 0x1a0b2e })); dome.scale.set(1, 0.8, 1.15);
+  const wire = new THREE.Mesh(domeGeo, mbm({ color: 0xff3df0, wireframe: true })); wire.scale.set(1.02, 0.82, 1.17);
   const weak = sprite(glowYellow, 1.7); weak.position.set(0, 0.8, 0);
-  const core = new THREE.Mesh(new THREE.SphereGeometry(0.17, 8, 6), new THREE.MeshBasicMaterial({ color: 0xffffcc })); core.position.set(0, 0.74, 0);
+  const core = new THREE.Mesh(sphG(0.17, 8, 6), mbm({ color: 0xffffcc })); core.position.set(0, 0.74, 0);
   const legs = [];
   for (const s of [-1, 1]) for (const z of [-0.6, 0, 0.6]) legs.push(s * 0.8, 0.05, z, s * 1.25, 0.3, z * 1.3);
-  const lg = new THREE.BufferGeometry().setAttribute('position', new THREE.Float32BufferAttribute(legs, 3));
-  g.add(dome, wire, weak, core, new THREE.LineSegments(lg, new THREE.LineBasicMaterial({ color: 0xff3df0 })));
+  const lg = bufG(legs);
+  g.add(dome, wire, weak, core, new THREE.LineSegments(lg, ownM(new THREE.LineBasicMaterial({ color: 0xff3df0 }))));
   g.userData.weak = weak;
   return g;
 }
 function makeDrone() {
   const g = new THREE.Group();
-  const body = new THREE.Mesh(droneGeo, new THREE.MeshBasicMaterial({ color: 0x1e0d05 })); body.scale.set(1.2, 0.8, 1);
-  const wire = new THREE.Mesh(droneGeo, new THREE.MeshBasicMaterial({ color: 0xff8a1f, wireframe: true })); wire.scale.set(1.24, 0.83, 1.03);
-  const ring = new THREE.Mesh(ringGeo, new THREE.MeshBasicMaterial({ color: 0xff3df0 }));
+  const body = new THREE.Mesh(droneGeo, mbm({ color: 0x1e0d05 })); body.scale.set(1.2, 0.8, 1);
+  const wire = new THREE.Mesh(droneGeo, mbm({ color: 0xff8a1f, wireframe: true })); wire.scale.set(1.24, 0.83, 1.03);
+  const ring = new THREE.Mesh(ringGeo, mbm({ color: 0xff3df0 }));
   const weak = sprite(glowYellow, 1.6); weak.position.set(0, 0, 0.72);
-  const core = new THREE.Mesh(new THREE.SphereGeometry(0.2, 8, 6), new THREE.MeshBasicMaterial({ color: 0xffffcc })); core.position.set(0, 0, 0.66);
+  const core = new THREE.Mesh(sphG(0.2, 8, 6), mbm({ color: 0xffffcc })); core.position.set(0, 0, 0.66);
   g.add(body, wire, ring, weak, core);
   g.userData.ring = ring; g.userData.weak = weak;
   return g;
 }
+function makeRoller() {
+  const g = new THREE.Group();
+  const ball = new THREE.Mesh(new THREE.IcosahedronGeometry(1.3, 1), matRoller);
+  const wire = new THREE.Mesh(new THREE.IcosahedronGeometry(1.36, 1), matRollerWire);
+  const spikes = []; for (let i = 0; i < 14; i++) { const a = i / 14 * Math.PI * 2; spikes.push(Math.cos(a) * 1.3, Math.sin(a) * 1.3, 0, Math.cos(a) * 1.85, Math.sin(a) * 1.85, 0); }
+  const sg = bufG(spikes);
+  const spin = new THREE.Group(); spin.add(ball, wire, new THREE.LineSegments(sg, lineLethal)); g.add(spin);
+  g.userData.spin = spin; g.userData.weak = { scale: { set() {} } };
+  return g;
+}
+function makeHopper() {
+  const g = new THREE.Group();
+  const body = new THREE.Mesh(sphG(0.85, 12, 9), matHopper), wire = new THREE.Mesh(sphG(0.89, 9, 7), matHopperWire);
+  const legs = []; for (const sx of [-1, 1]) for (const z of [-0.5, 0.5]) legs.push(sx * 0.6, -0.5, z, sx * 1.15, -0.95, z * 1.4);
+  const lg = bufG(legs);
+  const weak = sprite(glowYellow, 1.7); weak.position.set(0, 0.3, 0.7);
+  const eyes = new THREE.Mesh(sphG(0.17, 8, 6), mbm({ color: 0xffffcc })); eyes.position.set(0, 0.3, 0.72);
+  g.add(body, wire, new THREE.LineSegments(lg, ownM(new THREE.LineBasicMaterial({ color: 0x7dff6a }))), weak, eyes);
+  g.userData.weak = weak;
+  return g;
+}
 function addEnemy(type, d0, x0, amp, spd) {
   const e = newEnt(d0);
-  const mesh = type === 'beetle' ? makeBeetle() : makeDrone();
+  const mesh = type === 'beetle' ? makeBeetle() : type === 'roller' ? makeRoller() : type === 'hopper' ? makeHopper() : makeDrone();
   e.group.add(mesh);
   const baseY = type === 'beetle' ? 0.45 : 1.5;
-  const b = type === 'beetle'
-    ? addBox(e, 'beetle', null, x0, 0, d0, 2.6, 1.3, 2.7, {})
+  const b = type === 'beetle' ? addBox(e, 'beetle', null, x0, 0, d0, 2.6, 1.3, 2.7, {})
+    : type === 'roller' ? addBox(e, 'roller', null, x0, 0, d0, 2.6, 2.6, 2.6, {})
+    : type === 'hopper' ? addBox(e, 'hopper', null, x0, 0.1, d0, 1.9, 1.9, 1.9, {})
     : addBox(e, 'drone', null, x0, 0.6, d0, 2.3, 1.8, 2.0, {});
   b.mesh = mesh;                                           // the enemy mesh stands in for the box mesh
-  mesh.scale.setScalar(1.45);
-  mesh.position.set(x0, type === 'beetle' ? 0 : 1.5, 0);
+  mesh.scale.setScalar(type === 'roller' ? 1 : type === 'hopper' ? 1.2 : 1.45);
+  mesh.position.set(x0, type === 'beetle' ? 0 : type === 'roller' ? 1.3 : type === 'hopper' ? 1.05 : 1.5, 0);
   world.enemies.push({ type, e, box: b, mesh, x0, amp, spd, ph: rnd(0, 6.28), baseY });
 }
 function updateEnemies() {
@@ -716,16 +853,21 @@ function updateEnemies() {
     if (en.type === 'drone') {
       const y = 1.5 + 0.22 * Math.sin(world.time * 3 + en.ph);
       en.mesh.position.y = y; en.box.y = y; en.mesh.userData.ring.rotation.y += 0.12;
+    } else if (en.type === 'roller') {
+      en.mesh.userData.spin.rotation.z = -x * 0.9;                        // rolls as it travels
+    } else if (en.type === 'hopper') {
+      const y = 1.05 + 2.1 * Math.abs(Math.sin(world.time * 2.6 + en.ph));
+      en.mesh.position.y = y; en.box.y = y + 0.05;
     }
   }
 }
 function killEnemy(b, byDash) {
   if (b.dead) return;
   b.dead = true; b.mesh.visible = false;
-  const wx = b.x, wy = b.t === 'drone' ? b.y : 0.6;
-  burst(wx, wy, b.d, 'gold', 14, 9); burst(wx, wy, b.d, b.t === 'drone' ? 'orange' : 'mag', 16, 8);
+  const wx = b.x, wy = (b.t === 'drone' || b.t === 'hopper') ? b.y : 0.6;
+  burst(wx, wy, b.d, 'gold', 14, 9); burst(wx, wy, b.d, b.t === 'drone' ? 'orange' : b.t === 'hopper' ? 'green' : 'mag', 16, 8);
   sfx.smash(); shake = Math.max(shake, 0.35);
-  award(b.t === 'drone' ? 60 : 50, b.t === 'drone' ? 'CORE HIT' : 'CRACKED', 'mag');
+  award(b.t === 'drone' ? 60 : b.t === 'hopper' ? 60 : 50, b.t === 'drone' ? 'CORE HIT' : b.t === 'hopper' ? 'SQUASHED' : 'CRACKED', 'mag');
   if (byDash) refund('WEAK POINT');
 }
 
@@ -1004,7 +1146,187 @@ function pStyleGate(d0) {
   for (let i = 0; i < 7; i++) coin(Math.sin(i * 0.9) * 1.6, 1, d0 + 4 + i * 1.8);
   return 11;
 }
-const CHAIN_POOL = ['hole', 'glass', 'spikes', 'gate', 'window', 'gapwall', 'beetle', 'drone', 'brick'];
+/* ---- stairs: hovering slabs climbing 1.25m a step; some carry a spring pad that fires you ~8m up ---- */
+function addPlatform(e, p) {
+  const w = p.x1 - p.x0, len = p.d1 - p.d0;
+  const m = new THREE.Mesh(unitBox, matPlat); m.scale.set(w, PLAT_T, len); m.position.set((p.x0 + p.x1) / 2, p.top - PLAT_T / 2, e.d - (p.d0 + p.d1) / 2);
+  m.add(new THREE.LineSegments(unitEdges, linePlat)); e.group.add(m);
+  const cx0 = p.x0 + 0.3, cx1 = p.x1 - 0.3, z0 = e.d - p.d0 - 0.3, z1 = e.d - p.d1 + 0.3, yb = p.top - PLAT_T;      // posts so the height reads
+  const lg = new THREE.BufferGeometry().setAttribute('position', new THREE.Float32BufferAttribute([cx0, 0, z0, cx0, yb, z0, cx1, 0, z0, cx1, yb, z0, cx0, 0, z1, cx0, yb, z1, cx1, 0, z1, cx1, yb, z1], 3));
+  e.geos.push(lg); e.group.add(new THREE.LineSegments(lg, linePlat));
+  if (p.spring) {
+    const g = new THREE.Group(), base = new THREE.Mesh(springBaseGeo, matSpringPad), top = new THREE.Mesh(springBaseGeo, matSpringPad);
+    base.position.y = 0.08; top.position.y = 0.76;
+    g.add(base, top, new THREE.LineSegments(springCoilGeo, lineSpring), sprite(glowYellow, 2.6));
+    g.children[3].position.y = 0.9;
+    g.position.set(p.spring.x, p.top, e.d - p.spring.d); e.group.add(g); p.pad = g;
+  }
+  p.e = e; world.plats.push(p);
+}
+function pStairs(d0, S) {
+  const n = 5 + Math.round(diffAt(d0) * 3), L = q4(clamp(S * 0.5, 8, 16)), gap = q4(clamp(S * 0.22, 3.5, 8));
+  const e = newEnt(d0), grp = {}; let d = d0, xc = rnd(-1, 1), top = 0;
+  const ps = [];
+  for (let i = 0; i < n; i++) {
+    top += STEP_H;
+    const w = q4(rnd(5, 7)), last = i === n - 1;
+    xc = q4(clamp(xc + rnd(-1.4, 1.4), -(HALF - w / 2), HALF - w / 2));
+    const len = last ? 14 : L;
+    const p = { x0: xc - w / 2, x1: xc + w / 2, d0: d, d1: d + len, top, bot: top - PLAT_T, grp, xc, spring: null, springT: 0, pad: null };
+    if (i >= 1 && !last && Math.random() < 0.35) p.spring = { x: xc + q4(rnd(-w / 2 + 1.2, w / 2 - 1.2)), d: d + len - 2.4, r: 1.0 };
+    ps.push(p); addPlatform(e, p); d += len + (last ? 0 : gap);
+  }
+  e.dEnd = d;
+  ps.forEach((p, i) => {
+    const len = p.d1 - p.d0;
+    for (let k = 0; k < 3; k++) coin(p.xc, p.top + 1, p.d0 + len * (0.3 + 0.25 * k));
+    if (i < n - 1) { const q = ps[i + 1]; for (let k = 0; k < 4; k++) { const t = (k + 1) / 5; coin(lerp(p.xc, q.xc, t), lerp(p.top, q.top, t) + 1.4 + 1.6 * Math.sin(Math.PI * t), p.d1 + (q.d0 - p.d1) * t); } }
+    if (p.spring) for (let k = 0; k < 6; k++) coin(p.spring.x, p.top + 2 + k * 1.1, p.spring.d + 1 + k * 1.5);   // the spring's flight path
+  });
+  const last = ps[n - 1];
+  if (Math.random() < 0.6) pickup(pick(['heart', 'shield', 'magnet']), last.xc, last.top + 1.4, last.d0 + 7);
+  const mk = newEnt(d0 - CHEV / 2); chevrons(mk, d0, CHEV, matChevLime);
+  return d - d0 + 8;
+}
+
+/* ---- wall cannons: charge (red sight line shows the shot's height), then fire a saw (jump it) or an orb (slide under it) ---- */
+function makeSaw() {
+  const g = new THREE.Group(); const spin = new THREE.Group();
+  spin.add(new THREE.Mesh(sawGeo, matSawFill), new THREE.Mesh(sawRimGeo, mbm({ color: 0xff8a2a })));
+  const teeth = []; for (let i = 0; i < 12; i++) { const a = i / 12 * Math.PI * 2; teeth.push(Math.cos(a) * 1.0, Math.sin(a) * 1.0, 0, Math.cos(a) * 1.4, Math.sin(a) * 1.4, 0); }
+  spin.add(new THREE.LineSegments(bufG(teeth), lineLethal));
+  g.add(spin, sprite(glowOrange, 4)); g.userData.spin = spin; return g;
+}
+function makeOrb() {
+  const g = new THREE.Group();
+  g.add(new THREE.Mesh(bubbleGeo, matOrb), new THREE.Mesh(bubbleGeo, matOrbWire), sprite(glowOrange, 4.4)); g.scale.setScalar(1.05); return g;
+}
+function addCannon(d, side, kind) {
+  const e = newEnt(d), y = kind === 'orb' ? 2.4 : 0.75, hg = boxGeo(1.0, kind === 'orb' ? 1.7 : 1.4, 1.9);
+  const housing = new THREE.Mesh(hg, matMetal); housing.position.set(side * (HALF + 0.25), y, 0); housing.add(new THREE.LineSegments(hg.userData.edges, lineLethal));
+  const barrel = new THREE.Mesh(barrelGeo, matMetal); barrel.position.set(side * (HALF + 0.05), y, 0);
+  const muzzle = sprite(glowOrange, 1.2); muzzle.position.set(side * (HALF - 0.8), y, 0); muzzle.visible = false;
+  const len = W - 1.6, sight = new THREE.Mesh(unitBox, sightMat); sight.scale.set(len, 0.16, 0.16); sight.position.set(side * (HALF - 0.8) - side * len / 2, y, 0); sight.visible = false;
+  const ring = new THREE.Mesh(muzzleRingGeo, matMuzzleRing); ring.position.set(side * (HALF - 0.65), y, 0);
+  e.group.add(housing, barrel, muzzle, sight, ring);
+  world.wallOver.push({ d0: d - 5, d1: d + 5, h: y + 1.3 });             // raise the walls round a high cannon so it has something to sit in
+  world.cannons.push({ e, d, side, kind, y, state: 'idle', t: 0, tTravel: 0, aimX: 0, muzzle, barrel, sight, shot: null, mesh: null });
+}
+function updateCannons(dt) {
+  for (const c of world.cannons) {
+    if (c.state === 'done') continue;
+    const far = c.d - P.d, startX = c.side * (HALF - 0.8);
+    if (c.state === 'idle') {
+      if (far <= 0) { c.state = 'done'; continue; }
+      c.aimX = clamp(P.x, -LIM, LIM);                               // aimed where you are when it starts to charge
+      const tTravel = Math.abs(c.aimX - startX) / CANNON_V;
+      if (far <= curSpeed * (CANNON_CHARGE + tTravel)) { c.state = 'charge'; c.t = 0; c.muzzle.visible = c.sight.visible = true; sfx.charge(); }
+    } else if (c.state === 'charge') {
+      c.t += dt;
+      const k = c.t / CANNON_CHARGE, pulse = 1 + 0.5 * Math.sin(c.t * 30);
+      c.muzzle.scale.set(1.4 + 2.6 * k * pulse, 1.4 + 2.6 * k * pulse, 1); sightMat.opacity = 0.45 + 0.5 * k * (0.7 + 0.3 * pulse);
+      if (c.t >= CANNON_CHARGE) {
+        c.state = 'fly'; c.sight.visible = false;
+        c.mesh = c.kind === 'orb' ? makeOrb() : makeSaw(); c.mesh.position.set(startX, c.y, 0); c.e.group.add(c.mesh);
+        c.shot = { x: startX, dir: -c.side, hit: false };
+        burst(startX, c.y, c.d, 'orange', 8, 6); sfx.cannon(); shake = Math.max(shake, 0.12);
+      }
+    } else if (c.state === 'fly') {
+      const sh = c.shot; sh.x += sh.dir * CANNON_V * dt; c.mesh.position.x = sh.x;
+      if (c.kind === 'saw') c.mesh.userData.spin.rotation.z -= sh.dir * dt * 14; else c.mesh.scale.setScalar(1.05 + 0.08 * Math.sin(world.time * 25));
+      const dx = P.x - sh.x, dy = P.y - c.y, dd = P.d - c.d, r = (c.kind === 'saw' ? 1.0 : 0.95) + 0.42;
+      if (!sh.hit && dx * dx + dy * dy + dd * dd < r * r) { sh.hit = true; burst(sh.x, c.y, c.d, 'orange', 12, 8); hurt(LIGHT); }
+      if (Math.abs(sh.x) > HALF + 0.4) { c.state = 'done'; c.mesh.visible = false; c.muzzle.visible = false; burst(sh.x, c.y, c.d, 'orange', 6, 5); }
+    }
+  }
+}
+function pCannons(d0, S) {
+  const diff = diffAt(d0), n = 2 + Math.round(diff * 2), sp = Math.max(S * 0.9 + 4, 22);
+  let side = Math.random() < 0.5 ? -1 : 1;
+  for (let i = 0; i < n; i++) {
+    const kind = Math.random() < 0.4 + diff * 0.15 ? 'orb' : 'saw', d = d0 + 12 + i * sp;
+    addCannon(d, side, kind); side = -side;
+    if (kind === 'saw') for (let k = 0; k < 3; k++) coin(0, 2.4 + 0.5 * Math.sin(k * 1.4), d - 2 + k * 2);      // jump path
+    else for (let k = 0; k < 3; k++) coin(0, 0.45, d - 2 + k * 2);                                                // slide path
+  }
+  return 12 + n * sp;
+}
+
+/* ---- hazards on a clock: swinging blade, crushers ---- */
+function addPendulum(d, phase) {
+  const e = newEnt(d), H = 9;
+  const box = addBox(e, 'lethal', null, 0, 0, d, 2.0, 2.0, 1.4, { pend: true });
+  const blade = new THREE.Group(), spin = new THREE.Group();
+  spin.add(new THREE.Mesh(sawGeo, matSawFill), new THREE.Mesh(sawRimGeo, mbm({ color: 0xff3b2e })));
+  blade.add(spin); blade.userData.spin = spin; blade.position.set(0, 1.0, 0); box.mesh = blade;
+  const rg = new THREE.BufferGeometry().setAttribute('position', new THREE.Float32BufferAttribute([0, H, 0, 0, 1.0, 0], 3)); e.geos.push(rg);
+  const rope = new THREE.LineSegments(rg, lineLethal), bg = boxGeo(W, 0.5, 0.8), beam = new THREE.Mesh(bg, matMetal);
+  beam.position.set(0, H, 0); beam.add(new THREE.LineSegments(bg.userData.edges, lineLethal));
+  e.group.add(blade, rope, beam);
+  world.hazards.push({ type: 'pend', e, box, blade, rg, A: 3.0, w: 2.6, ph: phase, H });
+}
+const CRUSH_T = 2.6;
+function crushBottom(t) {
+  if (t < 1.2) return 8;
+  if (t < 1.7) return 8 - 0.8 * ((t - 1.2) / 0.5);
+  if (t < 1.82) return lerp(7.2, 0, (t - 1.7) / 0.12);
+  if (t < 2.2) return 0;
+  return lerp(0, 8, (t - 2.2) / 0.4);
+}
+function addCrusher(d, x, phase) {
+  const e = newEnt(d);
+  const plate = mkBox('stripe', 2.6, 1.2, 2.6, e.group); plate.position.set(x, 8.6, 0);
+  const box = addBox(e, 'lethal', null, x, 7.4, d, 2.6, 1.2, 2.6, { crush: true }); box.mesh = plate;
+  const rod = new THREE.Mesh(unitBox, matMetal); rod.scale.set(0.45, 10, 0.45); e.group.add(rod);
+  const padMat = new THREE.MeshBasicMaterial({ color: 0xff3b2e, transparent: true, opacity: 0.15, blending: THREE.AdditiveBlending, depthWrite: false }); e.mats.push(padMat);
+  const pad = new THREE.Mesh(crushPadGeo, padMat); pad.position.set(x, 0.05, 0); e.group.add(pad);
+  world.hazards.push({ type: 'crush', e, box, plate, rod, padMat, ph: phase, x, d, slammed: false });
+}
+function updateHazards() {
+  for (const h of world.hazards) {
+    if (h.type === 'pend') {
+      const x = h.A * Math.sin(world.time * h.w + h.ph);
+      h.blade.position.x = x; h.box.x = x; h.blade.userData.spin.rotation.z = -world.time * 5;
+      h.rg.attributes.position.setXYZ(1, x, 1.0, 0); h.rg.attributes.position.needsUpdate = true;
+    } else {
+      const t = (world.time + h.ph) % CRUSH_T, bot = crushBottom(t);
+      h.plate.position.y = bot + 0.6; h.box.y = bot + 0.6;
+      h.rod.scale.y = 14 - (bot + 1.2); h.rod.position.set(h.x, (bot + 1.2 + 14) / 2, 0);
+      h.padMat.opacity = t >= 1.0 && t < 1.82 ? 0.25 + 0.6 * Math.abs(Math.sin(world.time * 18)) : (t < 2.2 ? 0.6 : 0.12);
+      if (t >= 1.82 && t < 2.0 && !h.slammed) { h.slammed = true; if (Math.abs(h.d - P.d) < 26) { sfx.slam(); shake = Math.max(shake, Math.abs(h.d - P.d) < 12 ? 0.3 : 0.12); burst(h.x, 0.2, h.d, 'orange', 6, 6); } }
+      if (t < 1.0) h.slammed = false;
+    }
+  }
+}
+function pPendulum(d0, S) {
+  const n = 1 + Math.round(diffAt(d0) * 2), sp = Math.max(14, S * 0.7);
+  for (let i = 0; i < n; i++) { const d = d0 + 4 + i * sp; addPendulum(d, rnd(0, 6.28)); for (let k = 0; k < 3; k++) coin(0, 3.4 + 0.4 * Math.sin(k), d - 2 + k * 2); }
+  return 8 + n * sp;
+}
+function pCrusher(d0, S) {
+  const rows = 1 + (diffAt(d0) > 0.45 ? 1 : 0), sp = Math.max(16, S * 0.8);
+  for (let r = 0; r < rows; r++) {
+    const d = d0 + 4 + r * sp;
+    for (const x of [-2.7, 0, 2.7]) addCrusher(d, x, rnd(0, CRUSH_T));
+    for (let k = 0; k < 4; k++) coin(rnd(-2.7, 2.7) * (k % 2), 0.95, d - 3 + k * 2);
+  }
+  const mk = newEnt(d0 - CHEV / 2); chevrons(mk, d0, CHEV, matChevRed);
+  return 8 + rows * sp;
+}
+function pRoller(d0, S) {
+  const two = diffAt(d0) > 0.5 && Math.random() < 0.5, amp = rnd(1.7, 2.1), sp = Math.max(14, S * 0.85 + 3);   // far enough apart to land and jump again
+  addEnemy('roller', d0, rnd(-0.8, 0.8), amp, rnd(1.3, 1.9));
+  if (two) addEnemy('roller', d0 + sp, rnd(-0.8, 0.8), amp, rnd(1.3, 1.9));
+  for (let k = 0; k < 4; k++) coin(0, 3.8, d0 - 3 + k * 2);
+  return two ? sp + 5 : 7;
+}
+function pHopper(d0, S) {
+  const two = diffAt(d0) > 0.45 && Math.random() < 0.5, sp = Math.max(10, S * 0.5 + 2);
+  addEnemy('hopper', d0, rnd(-1.5, 1.5), rnd(0.8, 1.6), rnd(0.9, 1.4));
+  if (two) addEnemy('hopper', d0 + sp, rnd(-1.5, 1.5), rnd(0.8, 1.6), rnd(0.9, 1.4));
+  return two ? sp + 5 : 6;
+}
+const CHAIN_POOL = ['hole', 'glass', 'spikes', 'gate', 'window', 'gapwall', 'beetle', 'drone', 'brick', 'roller', 'pendulum', 'hopper', 'crusher'];
 function pChain(d0, S) {
   const n = diffAt(d0) > 0.5 && Math.random() < 0.5 ? 3 : 2;
   const gap = Math.max(15, S * 0.6 + 4);
@@ -1031,11 +1353,17 @@ const PATTERNS = {
   drone:   { min: 400, w: 3, build: pDrone, hint: 'DASH into the glowing core' },
   rain:    { min: 300, w: 4, build: pRain, hint: 'Red shadow = something is falling. Move!' },
   stylegate: { min: Infinity, w: 0, build: pStyleGate, hint: 'Rainbow glass = STYLE SHIFT! Dash through it to change the look' },
+  roller:  { min: 450, w: 3, build: pRoller, hint: 'Spike roller! JUMP over it' },
+  pendulum: { min: 500, w: 3, build: pPendulum, hint: 'Swinging blade! JUMP it' },
+  hopper:  { min: 520, w: 3, build: pHopper, hint: 'Hopper! DASH or SLAM it' },
+  crusher: { min: 600, w: 3, build: pCrusher, hint: 'Crushers! Take a lane whose red pad is calm' },
+  cannons: { min: 750, w: 4, build: pCannons, hint: 'Wall cannons! The red line shows the shot: JUMP low ones, SLIDE under high ones' },
+  stairs:  { min: 900, w: 3, build: pStairs, hint: 'Platforms! JUMP up the steps. Spring pads bounce you higher' },
   lava:    { min: 550, w: 3, build: pLava, hint: 'FLOOR IS LAVA! Jump stone to stone — DASH through the bubbles' },
   tube:    { min: 450, w: 2, build: pTube, hint: 'SPEED TUBE! Steer round the walls — or JUMP them' },
   chain:   { min: 650, w: 5, build: pChain },
 };
-const INTRO = ['coins', 'glass', 'brick', 'hole', 'spikes', 'gate', 'rain', 'window', 'beetle', 'drone', 'tube', 'lava'];
+const INTRO = ['coins', 'glass', 'brick', 'hole', 'spikes', 'gate', 'rain', 'window', 'beetle', 'drone', 'tube', 'lava', 'roller', 'pendulum', 'hopper', 'crusher', 'cannons', 'stairs'];
 
 function choosePattern(d) {
   if (world.attract) return 'coins';
@@ -1064,7 +1392,7 @@ function genUntil(limit) {
     const d0 = world.genD + (type === 'breather' ? Math.min(gap, 22) : gap);
     const len = type === 'breather' ? pBreather(d0) : PATTERNS[type].build(d0, S);
     const p = PATTERNS[type];
-    if (p && p.hint && !world.attract && (save.seen[type] || 0) < 2) world.hints.push({ type, text: p.hint, d0: d0 - 42, d1: d0 + len * 0.7, done: false });
+    if (p && p.hint && !world.attract && !save.seen[type]) world.hints.push({ type, text: p.hint, d0: d0 - 42, d1: d0 + len * 0.7, done: false });
     if (type !== 'breather') { world.sinceBreather++; world.lastType = type; }
     world.genD = d0 + len;
     world.patCount++;
@@ -1074,9 +1402,10 @@ function genUntil(limit) {
 function cullWorld() {
   const behind = P.d - 25;
   for (const e of world.ents.slice()) if (e.dEnd < behind) removeEnt(e);
-  world.items = world.items.filter((it) => { if (it.d < behind) { scene.remove(it.m); return false; } return true; });
+  world.items = world.items.filter((it) => { if (it.d < behind) { scene.remove(it.m); if (it.k !== 'coin') it.m.material.dispose(); return false; } return true; });
   world.holes = world.holes.filter((h) => h.d1 > behind - 20);
   world.tubes = world.tubes.filter((t) => t.d1 > behind - 20);
+  world.wallOver = world.wallOver.filter((o) => o.d1 > behind - 20);
   world.hints = world.hints.filter((h) => !h.done || h.d1 > behind);
   while (world.segs.length && world.segs[0].b < P.d - 45) removeSeg(world.segs.shift());
 }
@@ -1097,7 +1426,7 @@ function initPlayer() {
     jumps: 0, sliding: 0, slam: false, inv: 0, speedMul: 1, magnet: 0, od: 0,
     combo: 0, comboT: 0, bestCombo: 0, bonus: 0, coins: 0, smashes: 0, sq: 0, dead: false,
     keyDir: 0, buf: { jump: 0, smash: 0 }, wall: 0, scrapeT: 0, trailT: 0, rollX: 0,
-    tube: false, th: 0, tth: 0, tubeH: 0, tvy: 0, boost: 1, xv: 0, stone: null, zone: null, hops: 0,
+    tube: false, th: 0, tth: 0, tubeH: 0, tvy: 0, boost: 1, xv: 0, stone: null, zone: null, hops: 0, gy: 0, plat: null, pd: 0,
   });
 }
 const mult = () => Math.min(8, 1 + Math.floor(P.combo / 3));
@@ -1168,6 +1497,33 @@ function landOnStone() {
   P.hops++;
   award(30 + 10 * Math.min(P.hops, 10), 'HOP x' + P.hops, 'gold');
 }
+function landOnPlat(p) {
+  if (p === P.plat) return;
+  P.plat = p;
+  if (p.grp !== P.zone) { P.zone = p.grp; P.hops = 0; }
+  P.hops++;
+  award(25 + 10 * Math.min(P.hops, 10), 'STEP x' + P.hops, 'gold');
+}
+function springHit(p) { return Math.hypot(P.x - p.spring.x, P.d - p.spring.d) < p.spring.r + 0.35; }
+function springLaunch(p) {
+  P.vy = SPRING_V; P.sq = 0.8; p.springT = 0.3; P.bonus += 15;
+  burst(p.spring.x, p.top + 0.3, p.spring.d, 'gold', 14, 7, 4); pop('BOING!', 'gold'); sfx.boing(); shake = Math.max(shake, 0.25);
+}
+/** platforms are solid: running into a slab's side is a bonk (light hit, shoved back); jumping into its underside bumps your head */
+function platCollide() {
+  if (P.tube) return;
+  for (const p of world.plats) {
+    if (P.d < p.d0 - 0.5 || P.d > p.d1 + 0.5 || P.x < p.x0 - 0.5 || P.x > p.x1 + 0.5) continue;
+    const bottom = P.y - R, topB = P.y + (P.sliding > 0 ? 0.2 : 0.42);
+    if (bottom >= p.top - STEP_TOL || topB <= p.bot) continue;            // standing on it, or passing underneath
+    if (P.pd <= p.d0 - 0.45 && P.d < (p.d0 + p.d1) / 2) P.d = p.d0 - 0.5;   // came from the front: shove back out
+    else if (P.y <= p.bot) { P.y = p.bot - 0.43; if (P.vy > 0) P.vy = 0; continue; }   // already under it and jumped: bumped head
+    else { P.x = P.x < (p.x0 + p.x1) / 2 ? p.x0 - 0.5 : p.x1 + 0.5; P.tx = P.x; }      // clipped its side: shove sideways
+    P.dashT = 0;
+    if (P.inv <= 0) { burst(P.x, P.y, P.d, 'white', 8, 6); hurt(LIGHT); }
+    P.speedMul = Math.min(P.speedMul, 0.3);
+  }
+}
 function lavaBurn() {
   P.y = R; P.vy = 15; P.jumps = 0; P.slam = false; P.sq = 0.6; P.stone = null; P.hops = 0;
   burst(P.x, 0.3, P.d, 'orange', 22, 10); burst(P.x, 0.3, P.d, 'gold', 10, 8); wave(P.x, P.d, 0xff7a1a, 4);
@@ -1176,12 +1532,12 @@ function lavaBurn() {
 function trySmash() {
   if (P.dashT > 0) return false;
   if (P.tube) { if (P.tubeH > 0.4 && !P.slam) { P.slam = true; P.tvy = -34; sfx.slamStart(); } return true; }
-  if (P.y > 2.1) {                                       // airborne: ground pound
+  if (P.y - (P.gy || 0) > 2.1) {                         // airborne: ground pound
     if (P.slam) return true;
     P.slam = true; P.vy = -SLAM_V; P.sliding = 0; sfx.slamStart();
   } else {                                               // low: slide
     if (P.sliding > 0) return true;
-    P.slam = false; P.sliding = SLIDE_T; P.vy = 0; P.y = SLIDE_Y; P.jumps = 0; sfx.slide();
+    P.slam = false; P.sliding = SLIDE_T; P.vy = 0; P.y = (P.gy || 0) + SLIDE_Y; P.jumps = 0; sfx.slide();
   }
   return true;
 }
@@ -1212,12 +1568,12 @@ function shiftStyle(b) {
   sfx.shift(); shake = Math.max(shake, 0.7); buzz([30, 30, 70]);
 }
 function shockwave() {
-  wave(P.x, P.d, 0x9ffff4, 7.6); sfx.slam(); shake = Math.max(shake, 0.55);
-  burst(P.x, 0.2, P.d, 'cyan', 12, 8);
+  wave(P.x, P.d, 0x9ffff4, 7.6, (P.gy || 0) + 0.06); sfx.slam(); shake = Math.max(shake, 0.55);
+  burst(P.x, (P.gy || 0) + 0.2, P.d, 'cyan', 12, 8);
   for (const b of world.boxes) {
-    if (b.dead || !(b.t === 'beetle' || (b.t === 'smash' && b.aoe))) continue;
+    if (b.dead || !(b.t === 'beetle' || b.t === 'hopper' || (b.t === 'smash' && b.aoe))) continue;
     const dx = Math.max(0, Math.abs(b.x - P.x) - b.hx), dd = Math.max(0, Math.abs(b.d - P.d) - b.hd);
-    if (dx * dx + dd * dd < 3.8 * 3.8) { if (b.t === 'beetle') killEnemy(b, false); else smashBox(b, false); }
+    if (dx * dx + dd * dd < 3.8 * 3.8) { if (b.t === 'beetle' || b.t === 'hopper') killEnemy(b, false); else smashBox(b, false); }
   }
 }
 
@@ -1235,6 +1591,8 @@ function collide() {
       case 'lethal': case 'spike': hurt(HEAVY); break;
       case 'beetle': if (P.slam) killEnemy(b, false); else hurt(LIGHT); break;
       case 'drone': if (P.dashT > 0) killEnemy(b, true); else hurt(LIGHT); break;
+      case 'roller': hurt(HEAVY); break;
+      case 'hopper': if (P.dashT > 0 || P.slam) killEnemy(b, P.dashT > 0); else hurt(LIGHT); break;
     }
     if (P.dead) return;
   }
@@ -1253,7 +1611,7 @@ function updateItems(dt) {
     }
     it.m.position.x = it.x; it.m.position.z = -it.d; if (it.k === 'coin') it.m.position.y = it.y;
     if (Math.abs(it.d - P.d) < 0.9 && Math.abs(it.x - P.x) < 0.95 && Math.abs(it.y - P.y) < 1.1) {
-      scene.remove(it.m); world.items.splice(i, 1);
+      scene.remove(it.m); if (it.k !== 'coin') it.m.material.dispose(); world.items.splice(i, 1);
       if (it.k === 'coin') { P.coins++; P.bonus += 2; sfx.coin(); }
       else if (it.k === 'heart') { if (P.hearts < P.maxHearts) { P.hearts++; pop('+HEART', 'red'); } else { P.bonus += 100; pop('+100', 'gold'); } sfx.pickup(); burst(it.x, it.y, it.d, 'red', 10, 6); }
       else if (it.k === 'shield') { P.shield = SHIELD_MAX; pop('SHIELD UP', 'cyan'); sfx.pickup(); burst(it.x, it.y, it.d, 'cyan', 10, 6); }
@@ -1300,6 +1658,7 @@ function step(dt) {
     if (P.dashT <= 0) P.dashT = 0;
   }
   curSpeed = fv;
+  P.pd = P.d;                                  // where we were last step: tells a head-on bonk from a bump underneath
   P.d += fv * dt;
 
   /* steering */
@@ -1327,19 +1686,24 @@ function step(dt) {
       P.tubeH = 0; P.tvy = 0; P.jumps = 0;
     }
     const rb = (TUBE_R - R) - P.tubeH;
-    P.x = rb * Math.sin(P.th); P.y = TUBE_R - rb * Math.cos(P.th);
+    P.x = rb * Math.sin(P.th); P.y = TUBE_R - rb * Math.cos(P.th); P.gy = 0;
   } else {
-    const floor = hasFloor(P.x, P.d);
-    if (P.dashT > 0) { P.vy = 0; P.y = Math.max(P.y, R); }
-    else if (P.sliding > 0 && floor) { P.sliding -= dt; P.vy = 0; P.y = SLIDE_Y; if (Math.random() < 0.6) burst(P.x, 0.05, P.d + 0.3, 'gold', 1, 3); }
+    const bottom0 = P.y - R;
+    const sup = platSupport(P.x, P.d, bottom0);                       // a platform under the feet, if any
+    const gy = sup ? sup.top : (hasFloor(P.x, P.d) ? 0 : null);       // surface height under the ball (null = nothing: hole / lava)
+    const floor = gy !== null;
+    P.gy = floor ? gy : 0;
+    if (P.dashT > 0) { P.vy = 0; P.y = Math.max(P.y, R + P.gy); }
+    else if (P.sliding > 0 && floor) { P.sliding -= dt; P.vy = 0; P.y = gy + SLIDE_Y; if (Math.random() < 0.6) burst(P.x, gy + 0.05, P.d + 0.3, 'gold', 1, 3); }
     else {
       P.sliding = 0;
       if (P.slam) P.vy = -SLAM_V; else P.vy -= GRAV * dt;
       P.y += P.vy * dt;
-    if (!floor && playing && P.y <= R && P.vy < 0 && lavaAt(P.d)) lavaBurn();
-      if (floor && P.y <= R && P.vy < 0) {
-        P.y = R; P.jumps = 0; P.sq = 0.5; if (playing) landOnStone();
+      if (!floor && playing && P.y <= R && P.vy < 0 && lavaAt(P.d)) lavaBurn();
+      if (floor && P.y - R <= gy && P.vy < 0) {
+        P.y = gy + R; P.jumps = 0; P.sq = 0.5; if (playing) { landOnStone(); if (sup) landOnPlat(sup); }
         if (P.slam) { P.slam = false; P.vy = 11; shockwave(); }
+        else if (sup && sup.spring && playing && springHit(sup)) springLaunch(sup);
         else { P.vy = HOP_V; if (playing) sfx.bounce(); }
       }
     }
@@ -1350,10 +1714,11 @@ function step(dt) {
   if (P.buf.smash > 0) { P.buf.smash -= dt; if (trySmash()) P.buf.smash = 0; }
 
   /* world */
-  updateEnemies();
+  updateEnemies(); updateHazards();
   if (playing) {
+    platCollide();
     collide();
-    updateFalls(dt); updateBubbles(dt);
+    updateFalls(dt); updateBubbles(dt); updateCannons(dt);
     if (!P.tube && P.y < -8) fall();
   }
   updateItems(dt);
@@ -1366,8 +1731,14 @@ function step(dt) {
     let active = null;
     for (const h of world.hints) {
       if (h.done) continue;
-      if (P.d > h.d1) { h.done = true; save.seen[h.type] = (save.seen[h.type] || 0) + 1; persist(); continue; }
-      if (P.d >= h.d0 && !active) active = h.text;
+      if (P.d > h.d1) { h.done = true; continue; }
+      if (P.d >= h.d0 && !active) {
+        active = h.text;
+        if (!save.seen[h.type]) {                                   // shown once, ever: remember it now and drop queued repeats of it
+          save.seen[h.type] = 1; persist();
+          for (const o of world.hints) if (o !== h && o.type === h.type) o.done = true;
+        }
+      }
     }
     setHint(active);
   }
@@ -1376,7 +1747,7 @@ function step(dt) {
 /* ===================================================================== */
 /* visuals, camera                                                        */
 /* ===================================================================== */
-const cam = { x: 0, fov: 70, tube: 0 };
+const cam = { x: 0, y: 5.6, ly: 1.5, fov: 70, tube: 0 };
 function updateVisuals(dt) {
   applyPalette(dbgPal === null ? P.d : dbgPal);
   { const hue = (world.time * 0.35) % 1;
@@ -1391,7 +1762,7 @@ function updateVisuals(dt) {
   let sz = sx;
   if (P.dashT > 0) { sz = 1.8; sy = 0.85; sx = 0.85; }
   if (P.slam) { sy = 1.5; sx = 0.8; sz = 0.8; }
-  const bottom = P.sliding > 0 ? 0 : P.y - R;
+  const bottom = P.sliding > 0 ? (P.gy || 0) : P.y - R;
   ball.position.set(P.x, bottom + R * sy, -P.d);
   ball.scale.set(sx, sy, sz);
   ballCore.rotation.x -= curSpeed * dt / R * (mode === 'dying' ? 0 : 1);
@@ -1400,10 +1771,11 @@ function updateVisuals(dt) {
     ball.visible = !(P.inv > 0 && Math.floor(P.inv * 16) % 2 === 0);
     ballGlow.material.map = P.dashT > 0 || P.od > 0 ? glowCyan : glowOrange;
   }
-  const over = !P.tube && hasFloor(P.x, P.d);
-  shadow.visible = over && mode !== 'dying' && mode !== 'over';
-  shadow.position.set(P.x, 0.05, -P.d);
-  const hgt = Math.max(0, P.y - R);
+  const supV = P.tube ? null : platSupport(P.x, P.d, P.y - R);
+  const gsh = supV ? supV.top : (!P.tube && hasFloor(P.x, P.d) ? 0 : null);
+  shadow.visible = gsh !== null && mode !== 'dying' && mode !== 'over';
+  shadow.position.set(P.x, (gsh || 0) + 0.05, -P.d);
+  const hgt = Math.max(0, P.y - R - (gsh || 0));
   shadow.scale.setScalar(clamp(1.3 - hgt * 0.12, 0.45, 1.3));
   shadowMat.opacity = clamp(0.75 - hgt * 0.07, 0.2, 0.75);
 
@@ -1416,8 +1788,11 @@ function updateVisuals(dt) {
   const targetFov = baseFov + (P.dashT > 0 ? 11 : 0) + (mode === 'play' ? (curSpeed - 17) * 0.15 : 0) + k * 6;
   cam.fov += (targetFov - cam.fov) * Math.min(1, dt * 10);
   if (Math.abs(camera.fov - cam.fov) > 0.01) { camera.fov = cam.fov; camera.updateProjectionMatrix(); }
-  camera.position.set(lerp(cam.x, 0, k) + rnd(-1, 1) * sh * 0.5, lerp(5.6 + Math.min(P.y, 5) * 0.18, TUBE_R * 0.8, k) + rnd(-1, 1) * sh * 0.4, lerp(-P.d + 11.8, -P.d + 10.5, k));
-  camera.lookAt(lerp(cam.x * 0.9, 0, k), lerp(1.5, TUBE_R * 0.7, k), -P.d - 9);
+  const gyc = P.tube ? 0 : (P.gy || 0);                       // climb with the player when they're up on platforms
+  cam.y += (5.6 + Math.min(gyc, 10) * 0.62 + Math.min(Math.max(P.y - R - gyc, 0), 5) * 0.18 - cam.y) * Math.min(1, dt * 4);
+  cam.ly += (1.5 + Math.min(gyc, 10) * 0.5 - cam.ly) * Math.min(1, dt * 4);
+  camera.position.set(lerp(cam.x, 0, k) + rnd(-1, 1) * sh * 0.5, lerp(cam.y, TUBE_R * 0.8, k) + rnd(-1, 1) * sh * 0.4, lerp(-P.d + 11.8, -P.d + 10.5, k));
+  camera.lookAt(lerp(cam.x * 0.9, 0, k), lerp(cam.ly, TUBE_R * 0.7, k), -P.d - 9);
   dome.position.copy(camera.position); stars.position.copy(camera.position);
   sun.position.set(camera.position.x * 0.2, cur.sunY, camera.position.z - 215);
   moon.position.set(camera.position.x * 0.2 - 45, 58, camera.position.z - 210);
@@ -1426,6 +1801,16 @@ function updateVisuals(dt) {
   streakMat.opacity = P.dashT > 0 ? 0.65 : (P.tube ? 0.4 : 0.18);
   for (const s of streaks) if (s.userData.d < P.d - 6) placeStreak(s, 90);
   updateShards(dt); updateWaves(dt);
+  for (const p of world.plats) if (p.pad) { if (p.springT > 0) p.springT = Math.max(0, p.springT - dt); p.pad.scale.y = 1 - 0.6 * (p.springT / 0.3); }
+  for (const bl of world.blinkers) bl.s.material.opacity = 0.2 + 0.8 * (0.5 + 0.5 * Math.sin(world.time * 3 + bl.ph));
+  for (const bm of world.beams) { bm.m.rotation.z = bm.a0 + 0.3 * Math.sin(world.time * 0.6 + bm.ph); bm.m.rotation.x = 0.25 * Math.sin(world.time * 0.45 + bm.ph * 2); }
+  { const dp = dustGeo.attributes.position.array, cz = camera.position.z, cx = camera.position.x;     // drifting dust / embers streaming past
+    for (let i = 0; i < dustN; i++) {
+      let z = dp[i * 3 + 2]; while (z > cz + 14) z -= 90; while (z < cz - 76) z += 90;
+      dp[i * 3 + 2] = z; dp[i * 3 + 1] += Math.sin(world.time * 0.7 + i) * 0.004;
+      if (dp[i * 3] > cx + 16) dp[i * 3] -= 32; else if (dp[i * 3] < cx - 16) dp[i * 3] += 32;
+    }
+    dustGeo.attributes.position.needsUpdate = true; }
 
   /* pickups sprites face camera automatically; hole warning etc. are static */
   updateHud();
@@ -1504,7 +1889,7 @@ function startRun() {
   if (style !== save.style) setStyle(save.style, true);
   clearWorld(); initPlayer();
   world.attract = false; world.nextStyleD = STYLE_EVERY; world.genD = 20; world.segD = -SEG; world.patCount = 0; world.sinceBreather = 0; world.lastType = '';
-  world.intro = INTRO.filter((t) => (save.seen[t] || 0) < 2);
+  world.intro = INTRO.filter((t) => !save.seen[t]);
   mode = 'play'; paused = false;
   document.body.classList.add('playing'); document.body.classList.remove('paused');
   ball.visible = true; shadow.visible = true; shake = 0;
@@ -1513,7 +1898,10 @@ function startRun() {
   $('popups').innerHTML = '';
   for (const s of streaks) placeStreak(s, 0);
   genUntil(P.d + LOOK);
-  const dh = $('dragHint'); dh.classList.add('show'); setTimeout(() => dh.classList.remove('show'), 4500);
+  if (!save.seen.drag) {                                        // shown once, ever
+    save.seen.drag = 1; persist();
+    const dh = $('dragHint'); dh.classList.add('show'); setTimeout(() => dh.classList.remove('show'), 4500);
+  }
 }
 function showOver() {
   mode = 'over';
@@ -1664,6 +2052,9 @@ const sfx = (() => {
     slide() { noise(0.55, 0.28, 2200, 700, 0, 'bandpass'); },
     lava() { noise(0.5, 0.6, 900, 120, 0, 'lowpass'); tone(160, 50, 0.35, 'sawtooth', 0.25); },
     pop() { tone(500, 1100, 0.1, 'sine', 0.2); noise(0.12, 0.3, 4000, 1500); },
+    boing() { tone(200, 900, 0.22, 'sine', 0.3); tone(400, 1200, 0.15, 'triangle', 0.15, 0.05); },
+    charge() { tone(180, 640, 0.9, 'sawtooth', 0.05); },
+    cannon() { noise(0.25, 0.7, 2500, 150, 0, 'lowpass'); tone(110, 45, 0.25, 'sine', 0.6); },
     shift() { noise(0.6, 0.6, 200, 7000, 0, 'bandpass'); [330, 440, 554, 740, 988].forEach((f, i) => tone(f, f, 0.18, 'square', 0.12, i * 0.06)); tone(90, 40, 0.5, 'sine', 0.5); },
     whistle() { tone(1400, 260, 0.9, 'sine', 0.07); },
     boost() { noise(0.5, 0.5, 300, 5200, 0, 'bandpass'); tone(150, 600, 0.4, 'sawtooth', 0.16); },
@@ -1703,7 +2094,7 @@ if (/[?&]debug\b/.test(location.search)) {
     PATTERNS[type].build(60, 20); world.genD = 1e9; genUntil(0); P.d = 60 - (ahead || 26);
     dbgHold = true;
   };
-  window.__bb = { renderer, setStyle, get style() { return style; }, post, P, world, save, scene, camera, startRun, showMenu, step, get mode() { return mode; }, pop, patterns: PATTERNS, genUntil, isolate, hold(v) { dbgHold = v; }, setPal(v) { dbgPal = v; },
+  window.__bb = { wallH, platSupport, renderer, setStyle, get style() { return style; }, post, P, world, save, scene, camera, startRun, showMenu, step, get mode() { return mode; }, pop, patterns: PATTERNS, genUntil, isolate, hold(v) { dbgHold = v; }, setPal(v) { dbgPal = v; },
     // deterministic single frame for A/B measurements: n fixed sim steps, one fixed visual update, one render
     stepFrame(n, dtv) { dbgFreezeVis = true; for (let i = 0; i < n; i++) step(STEP); updateVisuals(dtv); renderFrame(performance.now()); } };
 }

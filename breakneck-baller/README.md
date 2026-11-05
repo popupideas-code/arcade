@@ -35,6 +35,17 @@ The button column can be moved to the left or right hand side from the menu or t
   Obsidian is slippery, so steering drifts and overshoots. Every new stone you land on adds to a **hop chain** that
   pays more each time, with coin arcs over each gap. Lava bubbles rise mid-gap: **DASH through them** for points and a
   refunded charge, or jump over them.
+- **Stairs** (lime chevrons): hovering steel slabs climbing 1.25 m a step. JUMP up them; running into a low step is a
+  bonk (light hit, shoved back), higher steps hover so you can also run underneath. **Spring pads** (yellow) fire you
+  about 8 m up to skip steps. Each new step adds to a chain that pays more each time, and the camera climbs with you.
+- **Wall cannons**: a muzzle ring on the wall charges up and a red laser shows the height of the shot, aimed where you
+  stand. Low **saws**: JUMP. High **orbs**: SLIDE under them. The wall is raised around high cannons.
+- **Swinging blade**: JUMP it (or time your lane). **Crushers**: three lanes slam down on a cycle, their red pad
+  flashes first. Take a lane whose pad is calm. A jump into a plate that is mid-slam still gets crushed.
+- **Spike rollers** patrol the lane: JUMP over them (pairs are spaced by speed so you can land and jump again).
+  **Hoppers**: DASH or SLAM them for points; running into them is a light hit.
+- The wall height changes along the track, with gantry arches, holographic billboards, blinking pylons, searchlights,
+  tall spires, light strips along the wall bases and drifting dust to break up the corridor. Scenery takes the palette's colours.
 - Hits drain the **shield** first (regenerates after a few seconds); when it's gone they cost a **heart**.
 - Chain smashes for a combo multiplier (up to x8). Coins buy upgrades on the menu screen.
 - The sky cycles through six looks every 1000 m (Neon Dusk, Midnight, Dawn Break, Golden Hour, Acid Rain,
@@ -57,6 +68,13 @@ patterns never change, only how the picture is drawn.
 Pixel/Comic/Watercolor draw the scene into a render target and restyle it in one full-screen shader (`POST_FRAG` in
 `game.js`); the HUD and menus are restyled with CSS (`body[data-style=...]`). Comic and Watercolor use a depth texture for
 silhouette outlines and fall back to no outlines where depth textures aren't available. The choice is saved locally.
+
+## Tips
+
+Each on-screen tip (the banner that explains an obstacle, and the "drag to steer" strip) is shown **once, ever**. It is
+remembered the moment it appears, so dying before you reach the obstacle doesn't bring it back, and several patterns of
+the same kind in one run only show the tip once. Old saves carry over (anything already seen stays dismissed). The
+tips live under `seen` in the `breakneckBaller.v1` localStorage entry.
 
 ## Files
 
