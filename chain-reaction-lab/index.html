@@ -134,11 +134,12 @@ textarea.code{width:100%;height:110px;resize:none;border-radius:12px;border:1px 
     spring:  { label: 'Spring', w: 84, th: 12,    rot: true,  mir: true,  tip: 'Spring pad: stores energy, then launches.' },
     magnet:  { label: 'Magnet', r: 18, R: 170,    rot: false, mir: false, power: true, tip: 'Electromagnet: pulls the steel ball. Tap it while running to switch it on or off.' },
     conveyor:{ label: 'Belt',   len: 130, th: 14, rot: true,  mir: true,  power: true, tip: 'Conveyor: a motor-driven belt carries the ball. Mirror flips its direction.' },
+    pipe:    { label: 'Pipe',   len: 170, th: 16, rot: true,  mir: false, tip: 'Pipe: the ball enters one end and comes out the other, whatever is in between.' },
     fan:     { label: 'Fan',    w: 64, th: 16,    rot: true,  mir: false, power: true, tip: 'Fan: moving air pushes the ball along the way it points.' },
     gearS:   { label: 'Gear S', r: 24,            rot: false, mir: false, gear: true, tip: 'Small gear: meshing gears spin opposite ways. Small drives big slower, big drives small faster.' },
     gearL:   { label: 'Gear L', r: 42,            rot: false, mir: false, gear: true, tip: 'Large gear: turns slower but with more torque when driven by a small gear.' }
   };
-  var ORDER = ['ramp', 'bumper', 'lever', 'spring', 'magnet', 'conveyor', 'fan', 'gearS', 'gearL'];
+  var ORDER = ['ramp', 'bumper', 'lever', 'spring', 'pipe', 'magnet', 'conveyor', 'fan', 'gearS', 'gearL'];
 
   /* ---------- level helpers ---------- */
   function shelf(x0, x1, top, thick, hole) {
@@ -200,6 +201,7 @@ textarea.code{width:100%;height:110px;resize:none;border-radius:12px;border:1px 
     var world = engine.world;
     var sim = {
       springs: [], engine: engine, t: 0, inGoal: 0, won: false, stall: 0, levers: [], gates: [], weights: [], parts: {}, ball: null,
+      tubes: [], hazards: [], tubeState: null, tubeCool: 0, destroyed: null,
       trail: [], tick: 0, failed: false, magnets: [], belts: [], fans: [], buttons: [], rotors: [], power: { 1: false, 2: false, 3: false },
       manual: {}, hit: null, hitId: 0, gears: null
     };
@@ -262,6 +264,13 @@ textarea.code{width:100%;height:110px;resize:none;border-radius:12px;border:1px 
       } else if (p.type === 'fan') {
         b = p.flush ? null : add(Bodies.rectangle(p.x, p.y, d.w, d.th, { isStatic: true, angle: p.a, friction: 0 }));
         sim.fans.push({ x: p.x, y: p.y, n: { x: Math.sin(p.a), y: -Math.cos(p.a) }, ch: p.ch || 0, L: p.L || 210, hw: 38 });
+      } else if (p.type === 'pipe') {
+        var hl = d.len / 2, cs = Math.cos(p.a), sn = Math.sin(p.a);
+        sim.tubes.push({ pts: [{ x: p.x - cs * hl, y: p.y - sn * hl }, { x: p.x + cs * hl, y: p.y + sn * hl }] });
+      } else if (p.type === 'tube') {
+        sim.tubes.push({ pts: p.pts.map(function (q) { return { x: q.x, y: q.y }; }) });
+      } else if (p.type === 'hazard') {
+        sim.hazards.push({ x: p.x, y: p.y, w: p.w, h: p.h, r: p.r, ch: p.ch || 0 });
       } else if (p.type === 'button') {
         b = add(Bodies.rectangle(p.x, p.y, p.w || 64, 10, { isStatic: true, friction: 0 }));
         sim.buttons.push({ x: p.x, y: p.y, w: p.w || 64, ch: p.ch || 1, latch: !!p.latch, down: false, latched: false });
@@ -371,6 +380,52 @@ textarea.code{width:100%;height:110px;resize:none;border-radius:12px;border:1px 
       });
     });
 
+    function plen(pts) { var L = 0; for (var i = 1; i < pts.length; i++) L += Math.hypot(pts[i].x - pts[i - 1].x, pts[i].y - pts[i - 1].y); return L; }
+    function pointAt(pts, d) {
+      for (var i = 1; i < pts.length; i++) {
+        var sl = Math.hypot(pts[i].x - pts[i - 1].x, pts[i].y - pts[i - 1].y);
+        if (d <= sl || i === pts.length - 1) { var q = sl ? Math.min(1, d / sl) : 0; return { x: pts[i - 1].x + (pts[i].x - pts[i - 1].x) * q, y: pts[i - 1].y + (pts[i].y - pts[i - 1].y) * q, dx: (pts[i].x - pts[i - 1].x) / (sl || 1), dy: (pts[i].y - pts[i - 1].y) / (sl || 1) }; }
+        d -= sl;
+      }
+    }
+    function runTube(h) {
+      var ts = sim.tubeState, bp = sim.ball.position;
+      if (ts) {
+        ts.d += ts.spd * h / (1000 / 60);
+        if (ts.d >= ts.len) {
+          var pe = pointAt(ts.pts, ts.len);
+          sim.ball.collisionFilter.mask = ts.mask; sim.tubeState = null; sim.tubeCool = 40;
+          Body.setPosition(sim.ball, { x: pe.x, y: pe.y });
+          Body.setVelocity(sim.ball, { x: pe.dx * 4.2, y: pe.dy * 4.2 });
+        } else {
+          var pp = pointAt(ts.pts, ts.d);
+          Body.setPosition(sim.ball, { x: pp.x, y: pp.y }); Body.setVelocity(sim.ball, { x: 0, y: 0 });
+        }
+        return;
+      }
+      if (sim.tubeCool > 0) { sim.tubeCool -= h / (1000 / 60); return; }
+      for (var i = 0; i < sim.tubes.length; i++) {
+        var tb = sim.tubes[i], a = tb.pts[0], b = tb.pts[tb.pts.length - 1], rev = null;
+        if (Math.hypot(bp.x - a.x, bp.y - a.y) < 17) rev = false; else if (Math.hypot(bp.x - b.x, bp.y - b.y) < 17) rev = true;
+        if (rev === null) continue;
+        var pts = rev ? tb.pts.slice().reverse() : tb.pts;
+        sim.tubeState = { pts: pts, d: 0, len: plen(pts), spd: 5.2, mask: sim.ball.collisionFilter.mask };
+        sim.ball.collisionFilter.mask = 0; sim.tubeId = i; sim.tubeUse = (sim.tubeUse || 0) + 1;
+        return;
+      }
+    }
+    function checkHazards() {
+      if (sim.destroyed || sim.won || sim.tubeState) return;
+      var bp = sim.ball.position;
+      for (var i = 0; i < sim.hazards.length; i++) {
+        var z = sim.hazards[i];
+        if (z.ch && sim.power[z.ch]) continue;
+        var hit;
+        if (z.r) hit = Math.hypot(bp.x - z.x, bp.y - z.y) < z.r + BR * 0.6;
+        else hit = Math.abs(bp.x - z.x) < z.w / 2 + BR * 0.6 && Math.abs(bp.y - z.y) < z.h / 2 + BR * 0.6;
+        if (hit) { sim.destroyed = { x: bp.x, y: bp.y }; sim.failed = true; return; }
+      }
+    }
     sim.step = function (dt) {
       dt = dt || 1000 / 60;
       var N = 3, h = dt / N;
@@ -388,6 +443,8 @@ textarea.code{width:100%;height:110px;resize:none;border-radius:12px;border:1px 
           Body.setPosition(o.body, { x: g.x, y: g.y - off });
         });
         M.Engine.update(engine, h);
+        runTube(h);
+        checkHazards();
         var v0 = Body.getVelocity(sim.ball), sp0 = Math.hypot(v0.x, v0.y);
         if (sp0 > 18) Body.setVelocity(sim.ball, { x: v0.x * 18 / sp0, y: v0.y * 18 / sp0 });
       }
@@ -399,7 +456,7 @@ textarea.code{width:100%;height:110px;resize:none;border-radius:12px;border:1px 
       var inside = Math.abs(lc.u) < gl.w / 2 - 3 && lc.v > 2 && lc.v < gl.d + 12;
       sim.inGoal = inside ? sim.inGoal + 1 : 0;
       if (sim.inGoal >= 5 && !sim.won) sim.won = true;
-      sim.stall = (sp < 0.06 && !(sim.magnets.length && sim.magnets.some(function (m) { return active(m.ch, m.id); }))) ? sim.stall + 1 : 0;
+      sim.stall = (sim.tubeState) ? 0 : (sp < 0.06 && !(sim.magnets.length && sim.magnets.some(function (m) { return active(m.ch, m.id); }))) ? sim.stall + 1 : 0;
       if (!sim.won && !sim.failed && (sim.stall > 200 || sim.t > 30000)) sim.failed = true;
     };
     return sim;
@@ -668,6 +725,79 @@ textarea.code{width:100%;height:110px;resize:none;border-radius:12px;border:1px 
     tray: { fan: 1, ramp: 1, spring: 1 }, par: 1,
     sol: [{ type: 'spring', x: 295, y: 483, a: 20 }, { type: 'fan', x: 523, y: 486, a: 10 }]
   });
+  /* 19 — Pipe */
+  L.push({
+    name: 'Pipe Through', world: 6,
+    hint: 'Roll the ball into one end of the pipe. It comes out the other side of the wall.',
+    note: 'A pipe moves things through or around obstacles. Fluids and cables are routed the same way.',
+    ball: { x: 110, y: 60 },
+    statics: shelf(0, W, 500, 60, { x: 800, w: 52, d: 48 }).concat([box(440, 200, 540, 500)]),
+    goal: { x: 800, y: 500, w: 52, d: 48 },
+    tray: { ramp: 1, pipe: 1 }, par: 2,
+    sol: [{ type: 'ramp', x: 84, y: 117, a: 10 }, { type: 'pipe', x: 490, y: 485, a: 0 }]
+  });
+
+  /* 20 — Spikes */
+  L.push({
+    name: 'Spike Hop', world: 6,
+    hint: 'Spikes destroy the ball. Launch it over them with the spring.',
+    note: 'Hazards end the run. Engineers add guards and clearances. Here, add height.',
+    ball: { x: 150, y: 60 },
+    statics: shelf(0, W, 500, 60, { x: 850, w: 52, d: 48 }),
+    fixtures: [{ type: 'hazard', x: 540, y: 486, w: 160, h: 28 }],
+    goal: { x: 850, y: 500, w: 52, d: 48 },
+    tray: { ramp: 1, spring: 1 }, par: 2,
+    sol: [{ type: 'ramp', x: 122, y: 128, a: 20 }, { type: 'spring', x: 354, y: 488, a: 20 }]
+  });
+
+  /* 21 — Saw switch */
+  L.push({
+    name: 'Saw Switch', world: 6,
+    hint: 'A saw blocks the floor. Hit the switch first and the saw shuts down.',
+    note: 'Interlocks: a safety switch must be satisfied before the machine is safe to pass.',
+    ball: { x: 110, y: 60 },
+    statics: shelf(0, W, 500, 60, { x: 860, w: 52, d: 48 }),
+    fixtures: [
+      { type: 'button', x: 330, y: 495, w: 64, ch: 1, latch: true },
+      { type: 'hazard', x: 600, y: 468, r: 30, ch: 1 }
+    ],
+    goal: { x: 860, y: 500, w: 52, d: 48 },
+    tray: { ramp: 1, bumper: 1 }, par: 1,
+    sol: [{ type: 'ramp', x: 95, y: 194, a: 20 }]
+  });
+
+  /* 22 — Dark pipe */
+  L.push({
+    name: 'Lights On', world: 7, dark: true,
+    hint: 'The room is dark and something is waiting on the floor. Hit the switch to turn the lamp on.',
+    note: 'Lights are just another circuit. Closing the switch lets current reach the lamp.',
+    ball: { x: 110, y: 60 },
+    statics: shelf(0, W, 500, 60, { x: 850, w: 52, d: 48 }),
+    fixtures: [
+      { type: 'button', x: 290, y: 495, w: 64, ch: 1, latch: true },
+      { type: 'lamp', x: 560, y: 330, R: 260, ch: 1 },
+      { type: 'hazard', x: 560, y: 486, w: 80, h: 28 }
+    ],
+    goal: { x: 850, y: 500, w: 52, d: 48 },
+    tray: { ramp: 1, pipe: 1 }, par: 2,
+    sol: [{ type: 'ramp', x: 84, y: 119, a: 10 }, { type: 'pipe', x: 536, y: 486, a: 0 }]
+  });
+
+  /* 23 — Tube run */
+  L.push({
+    name: 'Tube Run', world: 7,
+    hint: 'The tube carries the ball over the wall, but it lands on spikes. Catch it and send it on.',
+    note: 'Pipes deliver material to a fixed point. Whatever happens next is up to the next machine.',
+    ball: { x: 150, y: 60 },
+    statics: shelf(0, W, 500, 60, { x: 890, w: 52, d: 48 }).concat([box(400, 150, 440, 500)]),
+    fixtures: [
+      { type: 'tube', pts: [{ x: 150, y: 220 }, { x: 330, y: 220 }, { x: 420, y: 130 }, { x: 520, y: 130 }] },
+      { type: 'hazard', x: 740, y: 486, w: 160, h: 28 }
+    ],
+    goal: { x: 890, y: 500, w: 52, d: 48 },
+    tray: { ramp: 1, spring: 1, bumper: 1 }, par: 1,
+    sol: [{ type: 'ramp', x: 616, y: 360, a: 10 }]
+  });
 
   /* NEW_LEVELS */
   if (typeof module !== 'undefined') module.exports = RG;
@@ -684,7 +814,7 @@ textarea.code{width:100%;height:110px;resize:none;border-radius:12px;border:1px 
 
   var COL = { ramp: '#5ee0c1', bump: '#ff7fa8', lever: '#a78bfa', spring: '#b8f06c', goal: '#5fd8ff', gate: '#ffc46b', steel: '#9fb0cf', magnet: '#ff6b6b', belt: '#6ea8ff', fan: '#7ee8fa', gear: '#ffb86b' };
   var ORDER = RG.ORDER;
-  var EXT = { ramp: 80, bumper: 30, lever: 46, spring: 52, magnet: 30, conveyor: 80, fan: 50, gearS: 34, gearL: 52 };
+  var EXT = { pipe: 70, ramp: 80, bumper: 30, lever: 46, spring: 52, magnet: 30, conveyor: 80, fan: 50, gearS: 34, gearL: 52 };
   var LIFT = 66; /* touch: ghost floats this many px above the finger */
 
   var S = {
@@ -788,6 +918,7 @@ textarea.code{width:100%;height:110px;resize:none;border-radius:12px;border:1px 
     bumper: '<svg viewBox="0 0 48 48"><circle cx="24" cy="24" r="12" fill="#ff7fa8"/><circle cx="24" cy="24" r="17" fill="none" stroke="#ff7fa8" stroke-opacity=".4" stroke-width="2"/></svg>',
     lever: '<svg viewBox="0 0 48 48"><rect x="5" y="22" width="38" height="6" rx="3" fill="#a78bfa" transform="rotate(-8 24 25)"/><path d="M24 28 L18 40 H30 Z" fill="#a78bfa" fill-opacity=".5"/></svg>',
     spring: '<svg viewBox="0 0 48 48"><rect x="10" y="12" width="28" height="6" rx="3" fill="#b8f06c"/><path d="M24 18 l-8 4 l16 4 l-16 4 l16 4 l-8 3" fill="none" stroke="#b8f06c" stroke-width="2.5" stroke-linejoin="round"/></svg>',
+    pipe: '<svg viewBox="0 0 48 48"><rect x="4" y="18" width="40" height="12" rx="6" fill="none" stroke="#9ad7ff" stroke-width="2.5"/><circle cx="9" cy="24" r="4" fill="#9ad7ff"/><circle cx="39" cy="24" r="4" fill="#9ad7ff"/></svg>',
     magnet: '<svg viewBox="0 0 48 48"><path d="M10 14 V28 a14 14 0 0 0 28 0 V14 h-9 v14 a5 5 0 0 1 -10 0 V14 Z" fill="#ff6b6b"/><rect x="10" y="10" width="9" height="7" fill="#e9eefc"/><rect x="29" y="10" width="9" height="7" fill="#e9eefc"/></svg>',
     conveyor: '<svg viewBox="0 0 48 48"><rect x="5" y="19" width="38" height="10" rx="5" fill="none" stroke="#6ea8ff" stroke-width="2.5"/><path d="M17 24 h14 m-4 -4 l4 4 l-4 4" fill="none" stroke="#6ea8ff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>',
     fan: '<svg viewBox="0 0 48 48"><g fill="#7ee8fa"><ellipse cx="24" cy="15" rx="4.5" ry="9"/><ellipse cx="24" cy="15" rx="4.5" ry="9" transform="rotate(120 24 24)"/><ellipse cx="24" cy="15" rx="4.5" ry="9" transform="rotate(240 24 24)"/></g><circle cx="24" cy="24" r="3.5" fill="#0a1024"/></svg>',
@@ -1161,6 +1292,11 @@ textarea.code{width:100%;height:110px;resize:none;border-radius:12px;border:1px 
   }
   function onFail() {
     S.failDone = true; sfx('fail'); countTry(false);
+    if (S.sim && S.sim.destroyed) {
+      var dd = S.sim.destroyed; buzz(60);
+      for (var q = 0; q < 34; q++) { var qa = Math.random() * 6.283, qv = 1 + Math.random() * 4; S.particles.push({ x: dd.x, y: dd.y, vx: Math.cos(qa) * qv, vy: Math.sin(qa) * qv - 1.5, life: 1, c: ['#ff6b6b', '#ffb86b', '#ffd98a'][q % 3] }); }
+      toast('Destroyed! Keep the ball away from hazards.');
+    } else
     toast(S.hintOK && !S.custom ? 'Not quite. Try the hint \u{1F4A1} or adjust a part.' : 'Not quite. Tap reset, then adjust a part.');
     $('btnReset').classList.add('pulse');
   }
@@ -1391,11 +1527,71 @@ textarea.code{width:100%;height:110px;resize:none;border-radius:12px;border:1px 
           ctx.save(); ctx.strokeStyle = on ? 'rgba(255,184,107,.7)' : 'rgba(180,195,230,.25)'; ctx.lineWidth = 2; ctx.setLineDash([2, 5]); ctx.lineCap = 'round';
           ctx.beginPath(); ctx.moveTo(gn.x, gn.y + gn.r); ctx.lineTo(gn.x, f.y - 60); ctx.lineTo(f.x, f.y - 60); ctx.lineTo(f.x, f.y - 12); ctx.stroke(); ctx.restore();
         }
-      } else if (f.type === 'motorgear') drawGear(f.x, f.y, f.r, S.gearAng[f.id] || 0, true, true);
+      } else if (f.type === 'tube') drawTube(f.pts, false);
+      else if (f.type === 'hazard') { if (!(l.dark && S.mode !== 'run')) drawHazard(f, !!(f.ch && S.sim && S.sim.power[f.ch])); }
+      else if (f.type === 'lamp') drawLamp(f, f.ch ? !!(S.sim && S.sim.power[f.ch]) : true);
+      else if (f.type === 'motorgear') drawGear(f.x, f.y, f.r, S.gearAng[f.id] || 0, true, true);
       else if (f.type === 'gearfix') drawGear(f.x, f.y, f.r, S.gearAng[f.id] || 0, !!(byId[f.id] && byId[f.id].on), false);
     });
   }
   function drawBuilderGhost() {}
+  function drawTube(pts, local) {
+    ctx.save(); ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    function path() { ctx.beginPath(); pts.forEach(function (q, i) { if (i) ctx.lineTo(q.x, q.y); else ctx.moveTo(q.x, q.y); }); }
+    ctx.shadowColor = 'rgba(120,200,255,.6)'; ctx.shadowBlur = 12;
+    ctx.strokeStyle = 'rgba(130,205,255,.38)'; ctx.lineWidth = 24; path(); ctx.stroke(); ctx.shadowBlur = 0;
+    ctx.strokeStyle = '#0b1230'; ctx.lineWidth = 17; path(); ctx.stroke();
+    ctx.strokeStyle = 'rgba(160,220,255,.5)'; ctx.lineWidth = 2; ctx.setLineDash([2, 12]); ctx.lineDashOffset = -S.t / 25; path(); ctx.stroke(); ctx.setLineDash([]);
+    [pts[0], pts[pts.length - 1]].forEach(function (q) {
+      ctx.strokeStyle = 'rgba(140,215,255,.95)'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(q.x, q.y, 14, 0, 7); ctx.stroke();
+    });
+    ctx.restore();
+  }
+  function drawHazard(z, off) {
+    ctx.save(); ctx.globalAlpha = off ? 0.25 : 1;
+    ctx.shadowColor = '#ff4d4d'; ctx.shadowBlur = off ? 0 : 14;
+    if (z.r) {
+      ctx.translate(z.x, z.y); ctx.rotate(off ? 0 : S.t / 140);
+      var n = 12; ctx.fillStyle = grad(-z.r, z.r, '#ff9a9a', '#d92f2f'); ctx.beginPath();
+      for (var i = 0; i < n * 2; i++) { var a = i * Math.PI / n, rr2 = i % 2 ? z.r * 0.78 : z.r + 5; ctx.lineTo(Math.cos(a) * rr2, Math.sin(a) * rr2); }
+      ctx.closePath(); ctx.fill(); ctx.shadowBlur = 0;
+      ctx.fillStyle = '#2a0c14'; ctx.beginPath(); ctx.arc(0, 0, z.r * 0.3, 0, 7); ctx.fill();
+    } else {
+      var x0 = z.x - z.w / 2, y1 = z.y + z.h / 2, tw = 16, cnt = Math.max(1, Math.round(z.w / tw)), w2 = z.w / cnt;
+      ctx.fillStyle = grad(z.y - z.h / 2, y1, '#ff8a8a', '#c92b2b'); ctx.beginPath();
+      for (var k = 0; k < cnt; k++) { ctx.moveTo(x0 + k * w2, y1); ctx.lineTo(x0 + k * w2 + w2 / 2, z.y - z.h / 2); ctx.lineTo(x0 + (k + 1) * w2, y1); }
+      ctx.fill();
+    }
+    ctx.restore();
+  }
+  function drawLamp(f, on) {
+    var R = f.R || 220;
+    ctx.save(); ctx.translate(f.x, f.y);
+    if (on) { var g = ctx.createRadialGradient(0, 0, 4, 0, 0, 46); g.addColorStop(0, 'rgba(255,236,170,.8)'); g.addColorStop(1, 'rgba(255,236,170,0)'); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, 46, 0, 7); ctx.fill(); }
+    ctx.strokeStyle = on ? '#ffe9a8' : '#6b7aa0'; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.moveTo(0, -30); ctx.lineTo(0, -12); ctx.stroke();
+    ctx.fillStyle = on ? '#ffe9a8' : '#3a4768'; ctx.shadowColor = '#ffe9a8'; ctx.shadowBlur = on ? 18 : 0;
+    ctx.beginPath(); ctx.arc(0, 0, 11, 0, 7); ctx.fill(); ctx.restore();
+  }
+  function drawDark(l) {
+    var dk = S.dk || (S.dk = document.createElement('canvas'));
+    if (dk.width !== cv.width || dk.height !== cv.height) { dk.width = cv.width; dk.height = cv.height; }
+    var d = dk.getContext('2d'), run = S.mode === 'run';
+    d.setTransform(1, 0, 0, 1, 0, 0); d.globalCompositeOperation = 'source-over'; d.clearRect(0, 0, dk.width, dk.height);
+    d.fillStyle = run ? 'rgba(2,4,12,.95)' : 'rgba(2,4,12,.5)'; d.fillRect(0, 0, dk.width, dk.height);
+    if (run) {
+      d.setTransform(ctx.getTransform()); d.globalCompositeOperation = 'destination-out';
+      var L = [];
+      (l.fixtures || []).forEach(function (f) { if (f.type === 'lamp' && (!f.ch || (S.sim && S.sim.power[f.ch]))) L.push([f.x, f.y, f.R || 220, 1]); });
+      if (S.sim && !S.sim.destroyed) L.push([S.sim.ball.position.x, S.sim.ball.position.y, 100, 0.95]);
+      L.push([l.goal.x, l.goal.y, 70, 0.55]);
+      L.forEach(function (q) {
+        var g = d.createRadialGradient(q[0], q[1], q[2] * 0.12, q[0], q[1], q[2]);
+        g.addColorStop(0, 'rgba(0,0,0,' + q[3] + ')'); g.addColorStop(0.55, 'rgba(0,0,0,' + (q[3] * 0.9) + ')'); g.addColorStop(1, 'rgba(0,0,0,0)');
+        d.fillStyle = g; d.beginPath(); d.arc(q[0], q[1], q[2], 0, 7); d.fill();
+      });
+    }
+    ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.drawImage(dk, 0, 0); ctx.restore();
+  }
 
   function drawPart(p, alpha, live) {
     ctx.save(); ctx.globalAlpha *= alpha == null ? 1 : alpha;
@@ -1403,6 +1599,7 @@ textarea.code{width:100%;height:110px;resize:none;border-radius:12px;border:1px 
     if (p.type === 'ramp') drawRamp(p.x, p.y, p.a);
     else if (p.type === 'bumper') drawBumper(p.x, p.y);
     else if (p.type === 'lever') drawLever(p.fulcrum || { x: p.x, y: p.y }, b ? b.angle : RG.LIM_MIN * (p.m || 1), p.m || 1);
+    else if (p.type === 'pipe') { var ph = DEFS.pipe.len / 2, pc = Math.cos(p.a), ps = Math.sin(p.a); drawTube([{ x: p.x - pc * ph, y: p.y - ps * ph }, { x: p.x + pc * ph, y: p.y + ps * ph }], true); }
     else if (p.type === 'magnet') drawMagnet(p.x, p.y, S.sim ? S.sim.isOn(p.ch || 0, p.id) : p.on !== false, p.id);
     else if (p.type === 'conveyor') drawBelt(p.x, p.y, p.a, p.m || 1, DEFS.conveyor.len, true, 1);
     else if (p.type === 'fan') drawFan(p.x, p.y, p.a, S.sim ? S.sim.isOn(p.ch || 0, null) : true, 210);
@@ -1533,6 +1730,8 @@ textarea.code{width:100%;height:110px;resize:none;border-radius:12px;border:1px 
       drawWeight(b ? b.position.x : w.x, b ? b.position.y : w.y, b ? b.angle : 0, w.w, w.h);
     });
 
+    if (l.dark) drawDark(l);
+
     if (S.t < S.hintUntil && S.mode === 'edit') {
       ctx.save(); ctx.globalAlpha = 0.4 + 0.2 * Math.sin(S.t / 200);
       RG.placedFromSol(l).forEach(function (p) { drawPart(p, 1, false); });
@@ -1581,7 +1780,7 @@ textarea.code{width:100%;height:110px;resize:none;border-radius:12px;border:1px 
         var st2 = Math.min(0.2, (spd - 3.2) * 0.02);
         sqd = { ang: Math.atan2(S.bvy, S.bvx), sx: 1 + st2, sy: 1 - st2 * 0.6 };
       }
-      drawBall(bp.x, bp.y, S.ballRot, sqd);
+      if (!S.sim.destroyed) drawBall(bp.x, bp.y, S.ballRot, sqd);
     } else {
       var bs = l.ball;
       ctx.save(); ctx.strokeStyle = 'rgba(255,217,138,.35)'; ctx.lineWidth = 1.5; ctx.setLineDash([3, 5]);
