@@ -260,7 +260,7 @@ textarea.code{width:100%;height:110px;resize:none;border-radius:12px;border:1px 
         b.__belt = true; b.__dir = { x: Math.cos(p.a) * m, y: Math.sin(p.a) * m }; b.__ch = p.ch || 0; b.__gear = p.gear || null;
         sim.belts.push(b);
       } else if (p.type === 'fan') {
-        b = add(Bodies.rectangle(p.x, p.y, d.w, d.th, { isStatic: true, angle: p.a, friction: 0 }));
+        b = p.flush ? null : add(Bodies.rectangle(p.x, p.y, d.w, d.th, { isStatic: true, angle: p.a, friction: 0 }));
         sim.fans.push({ x: p.x, y: p.y, n: { x: Math.sin(p.a), y: -Math.cos(p.a) }, ch: p.ch || 0, L: p.L || 210, hw: 38 });
       } else if (p.type === 'button') {
         b = add(Bodies.rectangle(p.x, p.y, p.w || 64, 10, { isStatic: true, friction: 0 }));
@@ -601,11 +601,72 @@ textarea.code{width:100%;height:110px;resize:none;border-radius:12px;border:1px 
     statics: shelf(0, W, 500, 60, { x: 830, w: 52, d: 48 }).concat([box(580, 250, 604, 500)]),
     fixtures: [
       { type: 'button', x: 280, y: 495, w: 64, ch: 1, latch: true },
-      { type: 'fan', x: 400, y: 488, a: 0, ch: 1 }
+      { type: 'fan', x: 400, y: 500, a: 0, ch: 1, flush: true }
     ],
     goal: { x: 830, y: 500, w: 52, d: 48 },
     tray: { ramp: 2, bumper: 1 }, par: 1,
-    sol: [{ type: 'ramp', x: 70, y: 200, a: 20 }]
+    sol: [{ type: 'ramp', x: 78, y: 251, a: 20 }]
+  });
+  /* 15 — Odd gear */
+  L.push({
+    name: 'Odd One Out', world: 4,
+    hint: 'This time the belt must turn the same way as the motor. Use an odd number of idler gears.',
+    note: 'One idler gear passes the motion along without reversing it. Idlers change direction, not speed.',
+    ball: { x: 500, y: 60 },
+    statics: shelf(0, W, 500, 60, { x: 820, w: 52, d: 48 }),
+    fixtures: [
+      { type: 'motorgear', x: 120, y: 150, r: 24, w: 3 },
+      { type: 'gearfix', x: 230, y: 150, r: 24 },
+      { type: 'conveyor', x: 500, y: 493, a: 0, gear: 'f1' }
+    ],
+    goal: { x: 820, y: 500, w: 52, d: 48 },
+    tray: { gearS: 2, gearL: 1 }, par: 1,
+    sol: [{ type: 'gearL', x: 175, y: 113 }]
+  });
+
+  /* 16 — Two switches */
+  L.push({
+    name: 'Two Locks', world: 5,
+    hint: 'Two gates, two switches. The ball has to trigger both on its way.',
+    note: 'Circuits in series: every switch must close before the load works.',
+    ball: { x: 100, y: 60 },
+    statics: shelf(0, 450, 300, 20).concat(shelf(0, W, 500, 60, { x: 880, w: 52, d: 48 })),
+    fixtures: [
+      { type: 'button', x: 250, y: 295, w: 64, ch: 1, latch: true },
+      { type: 'button', x: 520, y: 495, w: 64, ch: 2, latch: true }
+    ],
+    gates: [{ x: 650, y: 460, w: 20, h: 80, amp: 84, ch: 1 }, { x: 760, y: 460, w: 20, h: 80, amp: 84, ch: 2 }],
+    goal: { x: 880, y: 500, w: 52, d: 48 },
+    tray: { ramp: 2, bumper: 1 }, par: 1,
+    sol: [{ type: 'ramp', x: 124, y: 213, a: 5 }]
+  });
+
+  /* 17 — Powered belt */
+  L.push({
+    name: 'Live Wire', world: 5,
+    hint: 'The belt is dead until the switch closes. Hit the switch first, then ride the belt up.',
+    note: 'Power and control are separate: a small switch can run a big motor.',
+    ball: { x: 110, y: 30 },
+    statics: shelf(0, 620, 500, 60).concat(shelf(620, W, 420, 140, { x: 820, w: 52, d: 48 })),
+    fixtures: [
+      { type: 'button', x: 330, y: 495, w: 64, ch: 1, latch: true },
+      { type: 'conveyor', x: 560, y: 460, a: -35, ch: 1 }
+    ],
+    goal: { x: 820, y: 420, w: 52, d: 48 },
+    tray: { ramp: 2, bumper: 1 }, par: 1,
+    sol: [{ type: 'ramp', x: 95, y: 342, a: 10 }]
+  });
+
+  /* 18 — Fan lift to ceiling */
+  L.push({
+    name: 'Updraft', world: 5,
+    hint: 'Float the ball up with the fan and into the ceiling cup.',
+    note: 'Air pushes hardest close to the fan. Aim the column so the ball drifts into the goal.',
+    ball: { x: 300, y: 60 },
+    statics: shelf(0, W, 500, 60).concat([box(480, 0, 800, 182)]),
+    goal: { x: 640, y: 232, w: 84, d: 50, ang: 180, cup: true },
+    tray: { fan: 1, ramp: 1, spring: 1 }, par: 1,
+    sol: [{ type: 'spring', x: 295, y: 483, a: 20 }, { type: 'fan', x: 523, y: 486, a: 10 }]
   });
 
   /* NEW_LEVELS */
@@ -1319,7 +1380,7 @@ textarea.code{width:100%;height:110px;resize:none;border-radius:12px;border:1px 
       if (f.type === 'button') {
         var bt = S.sim && S.sim.buttons.filter(function (q) { return Math.abs(q.x - f.x) < 1 && Math.abs(q.y - f.y) < 1; })[0];
         drawButton(f.x, f.y, f.w || 64, bt ? bt.down : false, f.ch, f.latch);
-      } else if (f.type === 'fan') drawFan(f.x, f.y, f.a, powered(f.ch, null), f.L || 210);
+      } else if (f.type === 'fan') drawFan(f.x, f.y + (f.flush ? 8 : 0), f.a, powered(f.ch, null), f.L || 210);
       else if (f.type === 'magnet') drawMagnet(f.x, f.y, powered(f.ch, f.id), f.id);
       else if (f.type === 'conveyor') {
         var spd = 1, on = powered(f.ch, null);
