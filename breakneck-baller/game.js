@@ -14,6 +14,7 @@ const LIGHT = 35, HEAVY = 70, SHIELD_MAX = 100;
 const STEP = 1 / 90, LOOK = 190, SEG = 40, TILE = 2;
 const TUBE_R = 4.6, TUBE_BOOST = 1.45, TJUMP_V = 12.5, TJUMP2_V = 12;   // speed-tube radius, speed multiplier, radial jump speeds
 const FALL_H = 28;
+const STYLE_EVERY = (() => { try { const n = Number(new URLSearchParams(location.search).get('gate')); return n >= 100 ? n : 5000; } catch (e) { return 5000; } })();   // metres between style-shift walls
 const LAVA_STIFF = 55, LAVA_DAMP = 8;                                  // slippery obsidian: steering overshoots a little                                                    // height meteors drop from
 
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -35,7 +36,7 @@ const UPS = [
   { id: 'magnet', name: 'Magnet Coil',  desc: 'Magnet power-up lasts longer', max: 3, cost: [100, 220, 380] },
 ];
 function loadSave() {
-  const def = { best: 0, coins: 0, up: { hearts: 0, dash: 0, shield: 0, magnet: 0 }, left: false, mute: false, seen: {} };
+  const def = { best: 0, coins: 0, up: { hearts: 0, dash: 0, shield: 0, magnet: 0 }, left: false, mute: false, seen: {}, style: 'neon' };
   try {
     const s = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null');
     if (s && typeof s === 'object') return Object.assign(def, s, { up: Object.assign(def.up, s.up), seen: Object.assign({}, s.seen) });
@@ -79,9 +80,138 @@ function resize() {
   baseFov = clamp(THREE.MathUtils.radToDeg(half) * 2, 62, 86);
   camera.fov = baseFov;
   camera.updateProjectionMatrix();
+  if (post.mat) rebuildPost();
 }
 window.addEventListener('resize', resize);
 window.addEventListener('orientationchange', () => setTimeout(resize, 150));
+
+/* ===================================================================== */
+/* visual styles: Neon draws straight to the canvas; Pixel / Comic / Pencil */
+/* draw the same scene into a render target and restyle it in one shader.  */
+/* ===================================================================== */
+const STYLES = ['neon', 'pixel', 'comic', 'watercolor'];
+if (save.style === 'pencil') save.style = 'watercolor';          // Pencil was replaced by Watercolor
+let style = STYLES.includes(save.style) ? save.style : 'neon';
+const post = { rt: null, mat: null, scene: null, cam: null, depthOK: false };
+const dummyTex = new THREE.DataTexture(new Uint8Array([0, 0, 0, 255]), 1, 1); dummyTex.needsUpdate = true;
+const POST_VERT = 'varying vec2 vUv; void main() { vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }';
+const POST_FRAG = `
+precision highp float;
+uniform sampler2D tColor; uniform sampler2D tDepth;
+uniform vec2 uTexel, uLow; uniform float uPx, uDpr, uTime, uStyle, uNear, uFar, uUseDepth, uDither, uMaxMix, uLevels, uGamma; uniform vec3 uTone;
+varying vec2 vUv;
+float luma(vec3 c) { return dot(c, vec3(0.299, 0.587, 0.114)); }
+vec3 tex(vec2 uv) { return texture2D(tColor, uv).rgb; }
+float iz(vec2 uv) { float z = texture2D(tDepth, uv).x * 2.0 - 1.0; return (uFar + uNear - z * (uFar - uNear)) / (2.0 * uNear * uFar); }
+float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+float vnoise(vec2 p) {
+  vec2 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f);
+  return mix(mix(hash(i), hash(i + vec2(1.0, 0.0)), f.x), mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), f.x), f.y);
+}
+float bayer2(vec2 a) { a = floor(a); return fract(a.x / 2.0 + a.y * a.y * 0.75); }
+float bayer4(vec2 a) { return bayer2(0.5 * a) * 0.25 + bayer2(a); }
+// silhouette edges from depth: second difference of inverse depth is ~0 on flat floors, large at object borders
+float depthEdge(vec2 uv, float k) {
+  if (uUseDepth < 0.5) return 0.0;
+  vec2 o = uTexel * uPx * k;
+  float c = iz(uv);
+  float e = abs(iz(uv + vec2(o.x, 0.0)) + iz(uv - vec2(o.x, 0.0)) - 2.0 * c) + abs(iz(uv + vec2(0.0, o.y)) + iz(uv - vec2(0.0, o.y)) - 2.0 * c);
+  return smoothstep(0.12, 0.45, e / max(c, 0.004));
+}
+void main() {
+  vec3 col;
+  if (uStyle < 0.5) {                                     // PIXEL: scene is rendered at 2x, each chunky pixel averages its 2x2 block (no popping lines), gentle dither
+    vec2 cell = (floor(vUv * uLow) + 0.5) / uLow;
+    vec2 h = 0.25 / uLow;
+    vec3 a = tex(cell + vec2(-h.x, -h.y)), b = tex(cell + vec2(h.x, -h.y)), c2 = tex(cell + vec2(-h.x, h.y)), d = tex(cell + vec2(h.x, h.y));
+    vec3 c = mix((a + b + c2 + d) * 0.25, max(max(a, b), max(c2, d)), uMaxMix);     // keep thin bright lines solid but let them fade in smoothly
+    c = pow(c, vec3(uGamma));                                                   // averaging dims 1px lines; lift them back
+    float bay = bayer4(floor(vUv * uLow));
+    col = clamp(floor(c * uLevels + 0.5 + (bay - 0.5) * uDither) / uLevels, 0.0, 1.0);
+  } else if (uStyle < 1.5) {                              // COMIC: flat poster colours, old offset-print misregistration, light halftone, ink outlines
+    vec2 px = uTexel * uPx;                               // one css pixel in uv
+    vec3 s = vec3(tex(vUv + px * vec2(1.6, -1.0)).r, tex(vUv + px * vec2(-1.2, 1.4)).g, tex(vUv + px * vec2(0.4, 1.8)).b);   // colour plates slip a little
+    vec3 c = pow(s, vec3(0.55));                          // lift the dark neon palette into bright poster colours
+    float l = luma(c);
+    c = clamp(mix(vec3(l), c, 1.6), 0.0, 1.0);
+    c = floor(c * 4.0 + 0.5) / 4.0;                       // flat colour: few levels per channel
+    float ang = 0.7854; mat2 R = mat2(cos(ang), -sin(ang), sin(ang), cos(ang));
+    vec2 cell = fract((R * gl_FragCoord.xy) / (5.0 * uDpr)) - 0.5;
+    float rad = (0.55 - l) * 0.9;
+    float dots = (1.0 - smoothstep(rad - 0.08, rad + 0.02, length(cell))) * step(l, 0.5);
+    c = mix(c, c * 0.62, dots * 0.55);                    // light halftone in the shadows
+    vec2 fc = gl_FragCoord.xy / uDpr;
+    float grain = vnoise(fc * 1.3) * 0.5 + vnoise(fc * 3.7) * 0.5;
+    c = mix(c, c * vec3(0.98, 0.94, 0.85), 0.55) * (0.95 + 0.07 * grain);   // cheap newsprint
+    vec2 inkOff = px * vec2(-2.2, 1.6);                   // the black plate slips the other way
+    float e = max(depthEdge(vUv + inkOff, 1.0), depthEdge(vUv + inkOff, 2.0) * 0.85);
+    col = mix(c, vec3(0.06, 0.04, 0.08), e);
+  } else {                                                // WATERCOLOR: soft pigment washes on paper. Fully static: no wobble, no hatching, nothing animated
+    vec2 o = uTexel * uPx * 1.6;
+    vec3 c0 = tex(vUv);
+    vec3 c = c0 * 0.4 + (tex(vUv + vec2(o.x, 0.0)) + tex(vUv - vec2(o.x, 0.0)) + tex(vUv + vec2(0.0, o.y)) + tex(vUv - vec2(0.0, o.y))) * 0.15;   // soft bleed for the washes
+    float V = max(c.r, max(c.g, c.b));
+    float V0 = max(c0.r, max(c0.g, c0.b));
+    float L = luma(c);
+    vec3 hue = c / max(V, 0.08);
+    vec2 fc = gl_FragCoord.xy / uDpr;
+    float blot = vnoise(fc * 0.018) * 0.6 + vnoise(fc * 0.05) * 0.4;          // pigment pooling
+    float grain = vnoise(fc * 1.1) * 0.5 + vnoise(fc * 3.1) * 0.5;            // paper tooth
+    float f = smoothstep(0.18, 0.85, V * 0.85 + L * 0.15);                    // mid-bright areas (horizon glow) get a light wash too
+    vec3 paper = vec3(0.96, 0.94, 0.88) * uTone * (0.95 + 0.07 * grain);
+    vec3 pigment = mix(hue, vec3(1.0), 0.1) * (0.9 - 0.12 * blot);
+    float amt = clamp(f * (0.66 + 0.5 * blot), 0.0, 0.97);
+    col = paper * mix(vec3(1.0), pigment, amt);
+    float stroke = smoothstep(0.06, 0.3, max(V0 - V, 0.0));                    // thin bright lines survive the bleed as crisp coloured brush strokes
+    col = mix(col, paper * (c0 / max(V0, 0.08)) * 0.62, stroke * 0.85);
+    vec2 e1 = uTexel * uPx * 1.2;
+    float gx = luma(tex(vUv + vec2(e1.x, 0.0))) - luma(tex(vUv - vec2(e1.x, 0.0)));
+    float gy = luma(tex(vUv + vec2(0.0, e1.y))) - luma(tex(vUv - vec2(0.0, e1.y)));
+    float edge = max(smoothstep(0.08, 0.35, length(vec2(gx, gy))), depthEdge(vUv, 1.2) * 0.8);
+    col *= 1.0 - 0.34 * edge;                                                  // wet-edge: pigment pools at borders
+    col = mix(col, hue * 0.4, edge * 0.3);                                     // faint coloured line
+    col *= 1.0 - 0.14 * pow(length(vUv - 0.5) * 1.3, 2.4);                     // soft vignette
+  }
+  gl_FragColor = vec4(col, 1.0);
+}`;
+function initPost() {
+  post.depthOK = renderer.capabilities.isWebGL2 || renderer.extensions.has('WEBGL_depth_texture');
+  post.cam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+  post.mat = new THREE.ShaderMaterial({
+    vertexShader: POST_VERT, fragmentShader: POST_FRAG, depthTest: false, depthWrite: false,
+    uniforms: { tColor: { value: null }, tDepth: { value: dummyTex }, uTexel: { value: new THREE.Vector2(1, 1) }, uLow: { value: new THREE.Vector2(1, 1) }, uPx: { value: 1 }, uDpr: { value: 1 },
+      uTime: { value: 0 }, uStyle: { value: 0 }, uNear: { value: 0.1 }, uFar: { value: 260 }, uUseDepth: { value: 0 }, uTone: { value: new THREE.Vector3(1, 1, 1) }, uDither: { value: 0.45 }, uMaxMix: { value: 0 }, uLevels: { value: 7 }, uGamma: { value: 1 } },   // tuned by measuring frame-to-frame popping (see README)
+  });
+  post.scene = new THREE.Scene(); post.scene.add(new THREE.Mesh(new THREE.PlaneGeometry(2, 2), post.mat));
+}
+function rebuildPost() {
+  if (post.rt) { if (post.rt.depthTexture) post.rt.depthTexture.dispose(); post.rt.dispose(); post.rt = null; }
+  if (style === 'neon') return;
+  const w = stage.clientWidth || 390, h = stage.clientHeight || 844, dpr = renderer.getPixelRatio();
+  let rw, rh, filt, px;
+  if (style === 'pixel') { rh = 480; rw = Math.max(160, Math.round(rh * w / h)); filt = THREE.LinearFilter; px = rh / h; }      // 2x the 240px art grid, averaged down in the shader
+  else { const sc = Math.max(1.25, Math.min(dpr, 1.75)); rw = Math.round(w * sc); rh = Math.round(h * sc); filt = THREE.LinearFilter; px = sc; }
+  const useDepth = post.depthOK && style !== 'pixel';
+  post.rt = new THREE.WebGLRenderTarget(rw, rh, { minFilter: filt, magFilter: filt, format: THREE.RGBAFormat, depthBuffer: true, stencilBuffer: false });
+  if (useDepth) post.rt.depthTexture = new THREE.DepthTexture(rw, rh, THREE.UnsignedIntType);
+  const u = post.mat.uniforms;
+  u.tColor.value = post.rt.texture; u.tDepth.value = useDepth ? post.rt.depthTexture : dummyTex;
+  u.uTexel.value.set(1 / rw, 1 / rh); u.uLow.value.set(rw / 2, rh / 2); u.uPx.value = px; u.uDpr.value = dpr; u.uUseDepth.value = useDepth ? 1 : 0;
+  u.uStyle.value = style === 'pixel' ? 0 : style === 'comic' ? 1 : 2; u.uNear.value = camera.near; u.uFar.value = camera.far;
+}
+function renderFrame(now) {
+  if (style === 'neon' || !post.rt) { renderer.render(scene, camera); return; }
+  renderer.setRenderTarget(post.rt); renderer.render(scene, camera); renderer.setRenderTarget(null);
+  post.mat.uniforms.uTime.value = now / 1000;
+  renderer.render(post.scene, post.cam);
+}
+function setStyle(name, quiet) {
+  style = STYLES.includes(name) ? name : 'neon';
+  document.body.dataset.style = style;
+  ballWire.visible = style !== 'pixel';            // the wire overlay turns a 7px ball into flickering noise at pixel resolution
+  if (post.mat) rebuildPost();
+  if (!quiet) { save.style = style; persist(); renderMenu(); }
+}
 
 /* ===================================================================== */
 /* textures, materials, shared geometry                                   */
@@ -216,6 +346,12 @@ const matBubble = new THREE.MeshBasicMaterial({ color: 0xff8a2a, transparent: tr
 const matBubbleWire = new THREE.MeshBasicMaterial({ color: 0xffd060, wireframe: true, transparent: true, opacity: 0.7 });
 const bubbleGeo = new THREE.SphereGeometry(0.9, 14, 10);
 const signMat = new THREE.SpriteMaterial({ map: slideSignTex, transparent: true, depthWrite: false });
+const styleSignTex = textTex('\u00BB STYLE SHIFT \u00AB', '#ffffff', 640, 128, 'italic 900 62px "Trebuchet MS", Arial, sans-serif');
+const matPrism = new THREE.MeshBasicMaterial({ map: hatchTex, color: 0xffffff, transparent: true, opacity: 0.6, depthWrite: false, blending: THREE.AdditiveBlending });
+const matPrismSolid = new THREE.MeshBasicMaterial({ color: 0xffffff });
+const linePrism = new THREE.LineBasicMaterial({ color: 0xffffff });
+const matChevPrism = new THREE.MeshBasicMaterial({ map: chevTex, color: 0xffffff, transparent: true, opacity: 0.9, depthWrite: false, blending: THREE.AdditiveBlending });
+const signPrismMat = new THREE.SpriteMaterial({ map: styleSignTex, transparent: true, depthWrite: false });
 
 const geoCache = new Map();
 function boxGeo(w, h, d) {
@@ -263,7 +399,8 @@ function sprite(tex, scale, color) {
 /* ===================================================================== */
 const ball = new THREE.Group(); scene.add(ball);
 const ballCore = new THREE.Mesh(new THREE.SphereGeometry(R, 20, 14), new THREE.MeshBasicMaterial({ map: ballTex }));
-ballCore.add(new THREE.Mesh(new THREE.SphereGeometry(R * 1.035, 12, 9), new THREE.MeshBasicMaterial({ color: 0xfff1c9, wireframe: true, transparent: true, opacity: 0.55 })));
+const ballWire = new THREE.Mesh(new THREE.SphereGeometry(R * 1.035, 12, 9), new THREE.MeshBasicMaterial({ color: 0xfff1c9, wireframe: true, transparent: true, opacity: 0.55 }));
+ballCore.add(ballWire);
 const ballGlow = sprite(glowOrange, 3.4);
 ball.add(ballCore, ballGlow);
 
@@ -333,6 +470,10 @@ function applyPalette(d) {
   matBuilding.color.setRGB(cur.bot[0] * 0.16 + 0.01, cur.bot[1] * 0.16 + 0.01, cur.bot[2] * 0.16 + 0.02);
   setC(sun.material.color, cur.tint); sun.material.opacity = cur.sun; moon.material.opacity = cur.moon; stars.material.opacity = cur.stars;
   paintDome();
+  if (post.mat) {                                  // watercolor paper: warm in the sun's tint, cool and darker at night
+    const night = clamp(cur.moon, 0, 1) * 0.8;
+    post.mat.uniforms.uTone.value.set(lerp(lerp(1, cur.tint[0], 0.5), 0.66, night), lerp(lerp(1, cur.tint[1], 0.5), 0.72, night), lerp(lerp(1, cur.tint[2], 0.5), 0.9, night));
+  }
 }
 
 const streakMat = new THREE.LineBasicMaterial({ color: 0x9ffff4, transparent: true, opacity: 0.2 });
@@ -408,7 +549,7 @@ function updateWaves(dt) {
 /* ===================================================================== */
 const world = {
   ents: [], boxes: [], items: [], enemies: [], holes: [], hints: [], segs: [], tubes: [], falls: [], bubbles: [],
-  genD: 0, segD: 0, patCount: 0, intro: [], sinceBreather: 0, lastType: '', time: 0, cullT: 0, attract: true,
+  genD: 0, segD: 0, patCount: 0, nextStyleD: STYLE_EVERY, intro: [], sinceBreather: 0, lastType: '', time: 0, cullT: 0, attract: true,
 };
 
 function clearWorld() {
@@ -434,8 +575,8 @@ function removeEnt(e) {
 }
 function mkBox(kind, w, h, d, parent) {
   const g = boxGeo(w, h, d);
-  const m = new THREE.Mesh(g, kind === 'brick' ? matBrick : kind === 'stripe' ? matStripe : matSmash);
-  m.add(new THREE.LineSegments(g.userData.edges, kind === 'smash' ? lineSmash : lineLethal));
+  const m = new THREE.Mesh(g, kind === 'brick' ? matBrick : kind === 'stripe' ? matStripe : kind === 'prism' ? matPrism : matSmash);
+  m.add(new THREE.LineSegments(g.userData.edges, kind === 'smash' ? lineSmash : kind === 'prism' ? linePrism : lineLethal));
   parent.add(m);
   return m;
 }
@@ -851,6 +992,18 @@ function pLava(d0, S) {
   }
   return len + 6;
 }
+/* ---- style-shift wall: rainbow glass; breaking it cycles the visual style for the rest of the run ---- */
+function pStyleGate(d0) {
+  const e = newEnt(d0 + 1), H = 12;
+  const g = addBox(e, 'smash', 'prism', 0, 0, d0 + 1, W, H, 0.8, { styleGate: true });
+  // frame and sign are children of the glass, so they vanish with it when it shatters
+  for (const x of [-HALF + 0.2, HALF - 0.2]) { const m = new THREE.Mesh(boxGeo(0.4, H + 0.4, 1), matPrismSolid); m.position.set(x, 0, 0); g.mesh.add(m); }
+  const top = new THREE.Mesh(boxGeo(W, 0.4, 1), matPrismSolid); top.position.set(0, H / 2 + 0.2, 0); g.mesh.add(top);
+  const sign = new THREE.Sprite(signPrismMat); sign.scale.set(8, 1.6, 1); sign.position.set(0, 6.2 - H / 2, 1.8); g.mesh.add(sign);
+  const mk = newEnt(d0 - CHEV / 2); chevrons(mk, d0, CHEV, matChevPrism);
+  for (let i = 0; i < 7; i++) coin(Math.sin(i * 0.9) * 1.6, 1, d0 + 4 + i * 1.8);
+  return 11;
+}
 const CHAIN_POOL = ['hole', 'glass', 'spikes', 'gate', 'window', 'gapwall', 'beetle', 'drone', 'brick'];
 function pChain(d0, S) {
   const n = diffAt(d0) > 0.5 && Math.random() < 0.5 ? 3 : 2;
@@ -877,6 +1030,7 @@ const PATTERNS = {
   beetle:  { min: 340, w: 3, build: pBeetle, hint: 'Jump high, then SLAM its glowing back' },
   drone:   { min: 400, w: 3, build: pDrone, hint: 'DASH into the glowing core' },
   rain:    { min: 300, w: 4, build: pRain, hint: 'Red shadow = something is falling. Move!' },
+  stylegate: { min: Infinity, w: 0, build: pStyleGate, hint: 'Rainbow glass = STYLE SHIFT! Dash through it to change the look' },
   lava:    { min: 550, w: 3, build: pLava, hint: 'FLOOR IS LAVA! Jump stone to stone — DASH through the bubbles' },
   tube:    { min: 450, w: 2, build: pTube, hint: 'SPEED TUBE! Steer round the walls — or JUMP them' },
   chain:   { min: 650, w: 5, build: pChain },
@@ -902,9 +1056,11 @@ function choosePattern(d) {
 }
 function genUntil(limit) {
   while (world.genD < limit) {
-    const type = choosePattern(world.genD);
     const S = speedAt(world.genD), diff = diffAt(world.genD);
     const gap = world.patCount === 0 ? 34 : Math.max(lerp(34, 17, diff) * rnd(0.9, 1.2), S * 0.55 + 4);
+    const due = !world.attract && world.genD + gap >= world.nextStyleD;      // first free gap at/after each STYLE_EVERY metres
+    const type = due ? 'stylegate' : choosePattern(world.genD);
+    if (due) { world.nextStyleD += STYLE_EVERY; world.sinceBreather = Math.max(world.sinceBreather, 4); }
     const d0 = world.genD + (type === 'breather' ? Math.min(gap, 22) : gap);
     const len = type === 'breather' ? pBreather(d0) : PATTERNS[type].build(d0, S);
     const p = PATTERNS[type];
@@ -1039,9 +1195,21 @@ function smashBox(b, perfectOK) {
   const n = clamp(Math.round(b.hx * b.hy * 2.2), 8, 26);
   burst(b.x, b.y, b.d, 'cyan', n, 9); burst(b.x, b.y, b.d, 'white', Math.floor(n / 3), 8);
   sfx.smash(); buzz(15); shake = Math.max(shake, 0.3);
+  if (b.styleGate) shiftStyle(b);
   if (perfectOK && P.dashEl < PERFECT_T && !P.perfectUsed) {
     P.perfectUsed = true; award(50, 'PERFECT', 'gold'); refund('PERFECT');
   } else award(25, 'SMASH', 'cyan');
+}
+function shiftStyle(b) {
+  const next = STYLES[(STYLES.indexOf(style) + 1) % STYLES.length];
+  setStyle(next, true);                       // for this run only; the saved Style is where the next run starts
+  renderMenu();
+  const bonus = 500 * mult(); P.bonus += bonus;
+  pop(next.toUpperCase() + ' STYLE!', 'cyan'); pop('STYLE SHIFT +' + bonus, 'gold');
+  for (const c of ['cyan', 'gold', 'mag', 'orange', 'white']) burst(b.x, 3, b.d, c, 12, 11, 4);
+  const f = $('styleFlash'); f.classList.remove('go'); void f.offsetWidth; f.classList.add('go');
+  const cv = $('c'); cv.classList.remove('tear'); void cv.offsetWidth; cv.classList.add('tear');
+  sfx.shift(); shake = Math.max(shake, 0.7); buzz([30, 30, 70]);
 }
 function shockwave() {
   wave(P.x, P.d, 0x9ffff4, 7.6); sfx.slam(); shake = Math.max(shake, 0.55);
@@ -1211,6 +1379,9 @@ function step(dt) {
 const cam = { x: 0, fov: 70, tube: 0 };
 function updateVisuals(dt) {
   applyPalette(dbgPal === null ? P.d : dbgPal);
+  { const hue = (world.time * 0.35) % 1;
+    matPrism.color.setHSL(hue, 1, 0.6); linePrism.color.setHSL((hue + 0.3) % 1, 1, 0.75); matPrismSolid.color.setHSL((hue + 0.6) % 1, 1, 0.55);
+    signPrismMat.color.setHSL(hue, 1, 0.8); matChevPrism.color.setHSL((hue + 0.15) % 1, 1, 0.6); }
   lavaTex.offset.set((world.time * 0.012) % 1, (-world.time * 0.05) % 1);
   /* ball */
   P.sq += (0 - P.sq) * Math.min(1, dt * 12);
@@ -1301,6 +1472,7 @@ function renderMenu() {
   $('mBest').textContent = save.best; $('mCoins').textContent = save.coins;
   ['handBtn', 'handBtn2'].forEach((id) => { $(id).textContent = 'Buttons: ' + (save.left ? 'LEFT HAND' : 'RIGHT HAND'); });
   ['muteBtn', 'muteBtn2'].forEach((id) => { $(id).textContent = 'Sound: ' + (save.mute ? 'OFF' : 'ON'); });
+  ['styleBtn', 'styleBtn2'].forEach((id) => { $(id).textContent = 'Style: ' + style.toUpperCase(); });
   $('controls').classList.toggle('lefty', !!save.left);
 }
 function renderShop() {
@@ -1318,7 +1490,8 @@ function renderShop() {
 }
 function showMenu() {
   sfx.init(); cur.idx = -1; cur.key = '';
-  clearWorld(); initPlayer(); world.attract = true; world.genD = 20; world.segD = -SEG; world.patCount = 0; world.sinceBreather = 0;
+  if (style !== save.style) setStyle(save.style, true);
+  clearWorld(); initPlayer(); world.attract = true; world.nextStyleD = STYLE_EVERY; world.genD = 20; world.segD = -SEG; world.patCount = 0; world.sinceBreather = 0;
   mode = 'menu'; paused = false;
   document.body.classList.remove('playing', 'paused');
   ball.visible = true; setHint(null);
@@ -1328,8 +1501,9 @@ function showMenu() {
 }
 function startRun() {
   sfx.init(); sfx.music(true); cur.idx = -1; cur.key = '';
+  if (style !== save.style) setStyle(save.style, true);
   clearWorld(); initPlayer();
-  world.attract = false; world.genD = 20; world.segD = -SEG; world.patCount = 0; world.sinceBreather = 0; world.lastType = '';
+  world.attract = false; world.nextStyleD = STYLE_EVERY; world.genD = 20; world.segD = -SEG; world.patCount = 0; world.sinceBreather = 0; world.lastType = '';
   world.intro = INTRO.filter((t) => (save.seen[t] || 0) < 2);
   mode = 'play'; paused = false;
   document.body.classList.add('playing'); document.body.classList.remove('paused');
@@ -1422,6 +1596,7 @@ $('menuBtn').onclick = showMenu;
 $('upBtn').onclick = () => { renderShop(); showScreen('shop'); };
 $('shopBack').onclick = () => { renderMenu(); showScreen('menu'); };
 ['handBtn', 'handBtn2'].forEach((id) => { $(id).onclick = () => { save.left = !save.left; persist(); renderMenu(); }; });
+['styleBtn', 'styleBtn2'].forEach((id) => { $(id).onclick = () => setStyle(STYLES[(STYLES.indexOf(style) + 1) % STYLES.length]); });
 ['muteBtn', 'muteBtn2'].forEach((id) => { $(id).onclick = () => { save.mute = !save.mute; persist(); sfx.mute(save.mute); renderMenu(); }; });
 $('pauseBtn').addEventListener('pointerdown', (e) => { e.stopPropagation(); setPaused(true); });
 $('resumeBtn').onclick = () => setPaused(false);
@@ -1489,6 +1664,7 @@ const sfx = (() => {
     slide() { noise(0.55, 0.28, 2200, 700, 0, 'bandpass'); },
     lava() { noise(0.5, 0.6, 900, 120, 0, 'lowpass'); tone(160, 50, 0.35, 'sawtooth', 0.25); },
     pop() { tone(500, 1100, 0.1, 'sine', 0.2); noise(0.12, 0.3, 4000, 1500); },
+    shift() { noise(0.6, 0.6, 200, 7000, 0, 'bandpass'); [330, 440, 554, 740, 988].forEach((f, i) => tone(f, f, 0.18, 'square', 0.12, i * 0.06)); tone(90, 40, 0.5, 'sine', 0.5); },
     whistle() { tone(1400, 260, 0.9, 'sine', 0.07); },
     boost() { noise(0.5, 0.5, 300, 5200, 0, 'bandpass'); tone(150, 600, 0.4, 'sawtooth', 0.16); },
     scrape() { noise(0.08, 0.12, 3500, 2500); },
@@ -1501,7 +1677,7 @@ const sfx = (() => {
 /* ===================================================================== */
 /* main loop                                                              */
 /* ===================================================================== */
-let last = performance.now(), acc = 0, dbgHold = false, dbgPal = null;
+let last = performance.now(), acc = 0, dbgHold = false, dbgPal = null, dbgFreezeVis = false;
 function frame(now) {
   requestAnimationFrame(frame);
   const dt = Math.min(0.1, (now - last) / 1000); last = now;
@@ -1509,11 +1685,13 @@ function frame(now) {
     acc += dt; let n = 0;
     while (acc >= STEP && n < 9) { if (!dbgHold) step(STEP); acc -= STEP; n++; }
     if (n >= 9) acc = 0;
-    updateVisuals(dt);
+    if (!dbgFreezeVis) updateVisuals(dt);
   }
-  renderer.render(scene, camera);
+  renderFrame(now);
 }
 
+initPost();
+setStyle(style, true);
 resize();
 showMenu();
 requestAnimationFrame(frame);
@@ -1525,6 +1703,8 @@ if (/[?&]debug\b/.test(location.search)) {
     PATTERNS[type].build(60, 20); world.genD = 1e9; genUntil(0); P.d = 60 - (ahead || 26);
     dbgHold = true;
   };
-  window.__bb = { renderer, P, world, save, scene, camera, startRun, showMenu, step, get mode() { return mode; }, pop, patterns: PATTERNS, genUntil, isolate, hold(v) { dbgHold = v; }, setPal(v) { dbgPal = v; } };
+  window.__bb = { renderer, setStyle, get style() { return style; }, post, P, world, save, scene, camera, startRun, showMenu, step, get mode() { return mode; }, pop, patterns: PATTERNS, genUntil, isolate, hold(v) { dbgHold = v; }, setPal(v) { dbgPal = v; },
+    // deterministic single frame for A/B measurements: n fixed sim steps, one fixed visual update, one render
+    stepFrame(n, dtv) { dbgFreezeVis = true; for (let i = 0; i < n; i++) step(STEP); updateVisuals(dtv); renderFrame(performance.now()); } };
 }
 })();

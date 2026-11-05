@@ -40,6 +40,24 @@ The button column can be moved to the left or right hand side from the menu or t
 - The sky cycles through six looks every 1000 m (Neon Dusk, Midnight, Dawn Break, Golden Hour, Acid Rain,
   Vaporwave). Obstacle colours never change, so the rules stay readable.
 
+## Visual styles
+
+Menu or pause screen > **Style** cycles four looks. All of them are the same game: the obstacle rules, shapes and
+patterns never change, only how the picture is drawn.
+
+- **Neon** (default): glowing vector lines on a synthwave sky. Draws straight to the canvas.
+- **Pixel**: a 240 px art grid. The scene is rendered at 2x and each chunky pixel averages its 2x2 block, so thin lines
+  fade between pixels instead of popping on and off, with 7 levels per channel and light ordered dithering.
+- **Comic**: flat poster colours (few levels per channel), light halftone dots in the shadows, black ink outlines, and
+  old offset-print misregistration: the colour plates sit a pixel or two apart and the black plate slips the other way.
+- **Watercolor**: the dark neon scene inverted into soft pigment washes on grainy paper, with pooled colour at the
+  edges and thin lines kept as crisp colour strokes. Completely static: nothing animates on its own, no wobble or hatching.
+  The paper warms and cools with the time of day. (Replaces the earlier Pencil style; old saves migrate automatically.)
+
+Pixel/Comic/Watercolor draw the scene into a render target and restyle it in one full-screen shader (`POST_FRAG` in
+`game.js`); the HUD and menus are restyled with CSS (`body[data-style=...]`). Comic and Watercolor use a depth texture for
+silhouette outlines and fall back to no outlines where depth textures aren't available. The choice is saved locally.
+
 ## Files
 
 - `index.html` — page shell, HUD, menus, styles

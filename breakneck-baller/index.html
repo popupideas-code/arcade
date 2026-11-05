@@ -47,6 +47,12 @@
   @keyframes rise { 0%{opacity:0; margin-top:14px; scale:.7} 15%{opacity:1; scale:1.12} 100%{opacity:0; margin-top:-70px; scale:1} }
   #flash { position:absolute; inset:0; pointer-events:none; opacity:0; transition:opacity .35s ease-out; }
   #flash.on { opacity:.55; transition:none; }
+  #styleFlash { position:absolute; inset:0; pointer-events:none; opacity:0; background:conic-gradient(from 0deg at 50% 55%,#ff3df0,#ffd23f,#8dff6a,#3dd9ff,#9b6bff,#ff3df0); mix-blend-mode:screen; }
+  #styleFlash.go { animation:styleflash .75s ease-out; }
+  @keyframes styleflash { 0% { opacity:.95; } 100% { opacity:0; } }
+  #c.tear { animation:tear .55s steps(9); }
+  @keyframes tear { 0% { transform:none; filter:none; } 12% { transform:translateX(-14px) skewX(3deg); filter:hue-rotate(90deg) saturate(2); } 25% { transform:translateX(18px); filter:invert(.4); }
+    37% { transform:translateX(-8px) skewX(-4deg); filter:hue-rotate(200deg); } 50% { transform:translateX(10px); } 75% { transform:translateX(-4px); filter:hue-rotate(40deg); } 100% { transform:none; filter:none; } }
   #dragHint { position:absolute; bottom:calc(22px + env(safe-area-inset-bottom)); left:0; right:0; text-align:center; font-size:13px; letter-spacing:3px; color:rgba(255,255,255,.55); pointer-events:none; opacity:0; transition:opacity .6s; }
   #dragHint.show { opacity:1; }
 
@@ -101,6 +107,75 @@
   .grid { display:grid; grid-template-columns:repeat(3,1fr); gap:12px 22px; font-size:11px; letter-spacing:2px; color:rgba(255,255,255,.65); }
   .grid b { display:block; font-size:20px; color:#fff; letter-spacing:1px; }
   #pauseCard h2 { color:#fff; text-shadow:0 0 14px var(--mag); }
+
+  /* ---------- visual styles: the canvas look is a shader post-process; these restyle the DOM to match ---------- */
+  /* PIXEL */
+  body[data-style=pixel] * { font-family:"Courier New",ui-monospace,Menlo,monospace !important; font-style:normal !important; }
+  body[data-style=pixel] .btn, body[data-style=pixel] button.big, body[data-style=pixel] button.alt, body[data-style=pixel] button.mini,
+  body[data-style=pixel] #hint, body[data-style=pixel] .up, body[data-style=pixel] #pauseBtn, body[data-style=pixel] .up button { border-radius:0 !important; box-shadow:4px 4px 0 #000 !important; }
+  body[data-style=pixel] .btn { border-width:4px; background:rgba(0,0,0,.6); }
+  body[data-style=pixel] #shield { border-radius:0; border-width:2px; }
+  body[data-style=pixel] #shieldFill { box-shadow:none; }
+  body[data-style=pixel] #score, body[data-style=pixel] #combo, body[data-style=pixel] #coins, body[data-style=pixel] #hearts, body[data-style=pixel] .pop, body[data-style=pixel] h2,
+  body[data-style=pixel] #overTitle, body[data-style=pixel] #overScore { text-shadow:3px 3px 0 #000 !important; }
+  body[data-style=pixel] .logo span:first-child { text-shadow:4px 4px 0 #000, 0 0 0 transparent; }
+  body[data-style=pixel] .logo span:last-child { background:none; -webkit-background-clip:border-box; background-clip:border-box; color:var(--orange); filter:none; text-shadow:4px 4px 0 #000; }
+  body[data-style=pixel] button.big { animation:none; }
+  /* COMIC */
+  body[data-style=comic] * { font-family:Impact,"Arial Black","Trebuchet MS",sans-serif !important; font-style:normal !important; }
+  body[data-style=comic] #hud, body[data-style=comic] .screen { -webkit-text-stroke:1.1px #000; paint-order:stroke fill; }
+  body[data-style=comic] #score, body[data-style=comic] #combo, body[data-style=comic] #coins, body[data-style=comic] #hearts, body[data-style=comic] .pop,
+  body[data-style=comic] h2, body[data-style=comic] #overTitle, body[data-style=comic] #overScore { text-shadow:3px 3px 0 #000 !important; }
+  body[data-style=comic] .btn { border:4px solid #000; background:var(--c); color:#000; box-shadow:3px 4px 0 #000; text-shadow:none; -webkit-text-stroke:0; }
+  body[data-style=comic] .btn svg { stroke-width:3.6; }
+  body[data-style=comic] .btn:active, body[data-style=comic] .btn.down { background:#fff; }
+  body[data-style=comic] button.big { background:#ffd23f; color:#000; border:4px solid #000; box-shadow:5px 6px 0 #000; animation:none; -webkit-text-stroke:0; text-shadow:none; }
+  body[data-style=comic] button.alt, body[data-style=comic] button.mini { background:#fff; color:#000; border:3px solid #000; box-shadow:3px 3px 0 #000; -webkit-text-stroke:0; text-shadow:none; }
+  body[data-style=comic] #hint { background:#fff8c8; color:#000; border:3px solid #000; box-shadow:4px 4px 0 #000; -webkit-text-stroke:0; text-shadow:none; border-radius:10px; }
+  body[data-style=comic] .up { border:3px solid #000; background:#fff; color:#000; box-shadow:3px 3px 0 #000; -webkit-text-stroke:0; }
+  body[data-style=comic] .up small, body[data-style=comic] .up .lv { color:#333; }
+  body[data-style=comic] .up button { background:#ffd23f; color:#000; border:3px solid #000; }
+  body[data-style=comic] #pauseBtn { background:#fff; color:#000; border:3px solid #000; box-shadow:2px 3px 0 #000; -webkit-text-stroke:0; }
+  body[data-style=comic] .grid, body[data-style=comic] .stats, body[data-style=comic] .how, body[data-style=comic] .tag { background:rgba(10,6,34,.62); color:#fff; padding:6px 12px; border-radius:8px; -webkit-text-stroke:0; }
+  body[data-style=comic] .grid b, body[data-style=comic] .stats b { color:#ffd23f; }
+  body[data-style=comic] .logo span:last-child { filter:drop-shadow(3px 3px 0 #000); -webkit-text-stroke:0; }
+  body[data-style=comic] .screen { background:linear-gradient(180deg,rgba(255,210,63,.22),rgba(255,47,166,.18)); }
+  /* WATERCOLOR */
+  body[data-style=watercolor] { --pap:#f3ead2; --pen:#2b2a33; }
+  body[data-style=watercolor] #hud { color:var(--pen); }
+  body[data-style=watercolor] #score, body[data-style=watercolor] #combo, body[data-style=watercolor] #coins, body[data-style=watercolor] #hearts, body[data-style=watercolor] .pop,
+  body[data-style=watercolor] h2, body[data-style=watercolor] #overTitle, body[data-style=watercolor] #overScore { text-shadow:none !important; }
+  body[data-style=watercolor] #hearts .on { color:#c92a2a; } body[data-style=watercolor] #hearts .off { color:rgba(0,0,0,.18); }
+  body[data-style=watercolor] #shield { border-color:var(--pen); background:rgba(0,0,0,.08); }
+  body[data-style=watercolor] #shieldFill { background:#1c7ed6; box-shadow:none; }
+  body[data-style=watercolor] #shield.low #shieldFill { background:#e8590c; }
+  body[data-style=watercolor] #coins { color:#a86a00; } body[data-style=watercolor] #combo { color:#b35900; }
+  body[data-style=watercolor] #combo i b { background:#b35900; } body[data-style=watercolor] #combo i { background:rgba(0,0,0,.15); }
+  body[data-style=watercolor] #pauseBtn { border-color:var(--pen); color:var(--pen); background:rgba(243,234,210,.75); }
+  body[data-style=watercolor] #hint { background:var(--pap); color:var(--pen); border-color:var(--pen); text-shadow:none; }
+  body[data-style=watercolor] #dragHint { color:rgba(0,0,0,.45); }
+  body[data-style=watercolor] .pop.gold { color:#a86a00; } body[data-style=watercolor] .pop.cyan { color:#0b7285; } body[data-style=watercolor] .pop.mag { color:#a61e4d; }
+  body[data-style=watercolor] .pop.red { color:#c92a2a; } body[data-style=watercolor] .pop.green { color:#2b8a3e; }
+  body[data-style=watercolor] #bJump { --c:#2f9e44; } body[data-style=watercolor] #bDash { --c:#1c7ed6; } body[data-style=watercolor] #bSmash { --c:#c2255c; }
+  body[data-style=watercolor] .btn { color:var(--pen); background:rgba(243,234,210,.88); box-shadow:none; text-shadow:none; }
+  body[data-style=watercolor] .btn:active, body[data-style=watercolor] .btn.down { background:var(--c); color:#fff; }
+  body[data-style=watercolor] .pip { border-color:#1c7ed6; } body[data-style=watercolor] .pip.full { background:#1c7ed6; box-shadow:none; } body[data-style=watercolor] .pip.chg::after { background:rgba(28,126,214,.5); }
+  body[data-style=watercolor] .screen { background:rgba(243,234,210,.86); color:var(--pen); }
+  body[data-style=watercolor] #pause { background:rgba(243,234,210,.92) !important; }
+  body[data-style=watercolor] #pause h2 { color:var(--pen) !important; }
+  body[data-style=watercolor] .logo span:first-child { color:var(--pen); text-shadow:none; }
+  body[data-style=watercolor] .logo span:last-child { background:none; -webkit-background-clip:border-box; background-clip:border-box; color:#c2255c; filter:none; }
+  body[data-style=watercolor] .tag, body[data-style=watercolor] .stats, body[data-style=watercolor] .how, body[data-style=watercolor] .grid { color:rgba(40,40,50,.75); }
+  body[data-style=watercolor] .stats b, body[data-style=watercolor] .grid b { color:var(--pen); } body[data-style=watercolor] .stats b.gold { color:#a86a00; }
+  body[data-style=watercolor] .how b { color:#0b7285; } body[data-style=watercolor] .how b.g { color:#2b8a3e; } body[data-style=watercolor] .how b.m { color:#a61e4d; }
+  body[data-style=watercolor] h2 { color:var(--pen); }
+  body[data-style=watercolor] #overTitle { color:#c92a2a; } body[data-style=watercolor] #overScore { color:var(--pen); } body[data-style=watercolor] #overNew { color:#a86a00; text-shadow:none; }
+  body[data-style=watercolor] button.big { border-color:var(--pen); background:#ffd8a8; color:var(--pen); box-shadow:none; animation:none; }
+  body[data-style=watercolor] button.alt, body[data-style=watercolor] button.mini { border-color:var(--pen); color:var(--pen); background:rgba(255,255,255,.4); box-shadow:none; }
+  body[data-style=watercolor] .up { border-color:rgba(0,0,0,.35); background:rgba(255,255,255,.4); }
+  body[data-style=watercolor] .up small { color:rgba(40,40,50,.7); } body[data-style=watercolor] .up .lv { color:#1c7ed6; }
+  body[data-style=watercolor] .up button { border-color:#a86a00; color:#7a4b00; background:rgba(255,210,63,.35); }
+  body[data-style=watercolor] .up button:disabled { border-color:rgba(0,0,0,.2); color:rgba(0,0,0,.3); background:transparent; }
   #noWebgl { color:var(--red); }
 </style>
 </head>
@@ -119,6 +194,7 @@
     <div id="dragHint">◀ &nbsp; DRAG TO STEER &nbsp; ▶</div>
   </div>
   <div id="flash"></div>
+  <div id="styleFlash"></div>
 
   <div id="controls">
     <button class="btn" id="bJump" aria-label="Jump">
@@ -136,6 +212,7 @@
     <button class="big" id="playBtn">Play</button>
     <button class="alt" id="upBtn">Upgrades</button>
     <div class="row"><button class="mini" id="handBtn"></button><button class="mini" id="muteBtn"></button></div>
+    <div class="row"><button class="mini" id="styleBtn"></button></div>
     <p class="how">Drag to <b class="g">steer</b> &middot; <b class="g">JUMP</b> twice to float<br><b>DASH</b> through glowing glass &middot; <b class="m">SLAM</b> from above, <b class="m">SLIDE</b> under gates<br>Solid red brick &amp; spikes are deadly</p>
     <p class="how" id="noWebgl" style="display:none">WebGL isn't available in this browser.</p>
   </section>
@@ -163,6 +240,7 @@
     <h2 style="color:#fff">PAUSED</h2>
     <button class="big" id="resumeBtn">Resume</button>
     <div class="row"><button class="mini" id="handBtn2"></button><button class="mini" id="muteBtn2"></button></div>
+    <div class="row"><button class="mini" id="styleBtn2"></button></div>
     <button class="alt" id="quitBtn">Quit run</button>
   </section>
 </div>
