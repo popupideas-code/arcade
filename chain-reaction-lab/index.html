@@ -895,6 +895,96 @@ textarea.code{width:100%;height:110px;resize:none;border-radius:12px;border:1px 
     sol: [{ type: 'pendulum', x: 286, y: 156, a: 165 }]
   });
 
+  /* 28-35 combos */
+  L.push({
+    name: 'High Wall', world: 9,
+    hint: 'Fire the ball over the tall wall.',
+    note: 'Range and height both depend on launch angle.',
+    ball: { x: 110, y: 60 },
+    statics: shelf(0, W, 500, 60, { x: 850, w: 52, d: 48 }).concat([box(480, 340, 520, 500)]),
+    goal: { x: 850, y: 500, w: 52, d: 48 },
+    tray: { ramp: 1, cannon: 1 }, par: 2,
+    sol: [{ type: 'ramp', x: 72, y: 242, a: 15 }, { type: 'cannon', x: 362, y: 487, a: -70 }]
+  });
+  L.push({
+    name: 'Over the Top', world: 9,
+    hint: 'Swing the pendulum to knock the ball over the wall.',
+    note: 'More swing height gives more speed.',
+    ball: { x: 300, y: 286 },
+    statics: shelf(0, W, 500, 60, { x: 850, w: 52, d: 48 }).concat([box(0, 300, 440, 320), box(600, 440, 640, 500)]),
+    goal: { x: 850, y: 500, w: 52, d: 48 },
+    tray: { pendulum: 1 }, par: 1,
+    sol: [{ type: 'pendulum', x: 290, y: 164, a: 140 }]
+  });
+  L.push({
+    name: 'Pop and Fire', world: 9,
+    hint: 'Fire the ball through the balloon to open the gate.',
+    note: 'One event triggers the next. That is a chain reaction.',
+    ball: { x: 110, y: 60 },
+    statics: shelf(0, W, 500, 60, { x: 850, w: 52, d: 48 }).concat([box(480, 380, 520, 500)]),
+    gates: [{ x: 700, y: 440, w: 20, h: 120, amp: 130, ch: 1 }],
+    fixtures: [{ type: 'balloon', x: 600, y: 440, r: 20, ch: 1 }],
+    goal: { x: 850, y: 500, w: 52, d: 48 },
+    tray: { ramp: 1, cannon: 1 }, par: 2,
+    sol: [{ type: 'ramp', x: 113, y: 212, a: 20 }, { type: 'cannon', x: 254, y: 471, a: -60 }]
+  });
+  L.push({
+    name: 'Swing and Pop', world: 9,
+    hint: 'Hit the ball hard enough to pop the balloon and clear the gate.',
+    note: 'Energy is passed along: swing, ball, balloon, gate.',
+    ball: { x: 300, y: 286 },
+    statics: shelf(0, W, 500, 60, { x: 850, w: 52, d: 48 }).concat([box(0, 300, 440, 320)]),
+    gates: [{ x: 700, y: 440, w: 20, h: 120, amp: 130, ch: 1 }],
+    fixtures: [{ type: 'balloon', x: 560, y: 480, r: 20, ch: 1 }],
+    goal: { x: 850, y: 500, w: 52, d: 48 },
+    tray: { pendulum: 1 }, par: 1,
+    sol: [{ type: 'pendulum', x: 268, y: 163, a: 110 }]
+  });
+  L.push({
+    name: 'Long Line', world: 9,
+    hint: 'The ball is far away. Line up dominoes all the way.',
+    note: 'Each domino hands energy to the next, like a relay.',
+    ball: { x: 560, y: 487 },
+    statics: shelf(0, W, 500, 60, { x: 850, w: 52, d: 48 }).concat([box(100, 180, 200, 200)]),
+    weights: [{ x: 207, y: 157, w: 46, h: 46, density: 0.03 }],
+    goal: { x: 850, y: 500, w: 52, d: 48 },
+    tray: { domino: 10 }, par: 6,
+    sol: [{ type: 'domino', x: 225, y: 477, a: 0 }, { type: 'domino', x: 249, y: 477, a: 0 }, { type: 'domino', x: 273, y: 477, a: 0 }, { type: 'domino', x: 297, y: 477, a: 0 }, { type: 'domino', x: 321, y: 477, a: 0 }, { type: 'domino', x: 345, y: 477, a: 0 }]
+  });
+  L.push({
+    name: 'Twin Cannons', world: 9,
+    hint: 'Chain two cannons to reach the goal.',
+    note: 'Each launch can feed the next one.',
+    ball: { x: 110, y: 60 },
+    statics: shelf(0, W, 500, 60, { x: 850, w: 52, d: 48 }).concat([box(420, 360, 460, 500), box(680, 380, 720, 500)]),
+    goal: { x: 850, y: 500, w: 52, d: 48 },
+    tray: { ramp: 1, cannon: 2 }, par: 3,
+    sol: [{ type: 'ramp', x: 137, y: 155, a: 25 }, { type: 'cannon', x: 311, y: 476, a: -75 }, { type: 'cannon', x: 474, y: 476, a: -50 }]
+  });
+  L.push({
+    name: 'Domino Pop', world: 9,
+    hint: 'Dominoes push the ball into the balloon. The gate opens.',
+    note: 'A row of simple parts can trigger a lock.',
+    ball: { x: 440, y: 487 },
+    statics: shelf(0, W, 500, 60, { x: 850, w: 52, d: 48 }).concat([box(100, 180, 200, 200)]),
+    weights: [{ x: 207, y: 157, w: 46, h: 46, density: 0.03 }],
+    gates: [{ x: 620, y: 440, w: 20, h: 120, amp: 130, ch: 1 }],
+    fixtures: [{ type: 'balloon', x: 500, y: 480, r: 20, ch: 1 }],
+    goal: { x: 850, y: 500, w: 52, d: 48 },
+    tray: { domino: 6 }, par: 2,
+    sol: [{ type: 'domino', x: 235, y: 477, a: 0 }, { type: 'domino', x: 271, y: 477, a: 0 }]
+  });
+  L.push({
+    name: 'Cannon Springboard', world: 9,
+    hint: 'Combine a spring and a cannon.',
+    note: 'Stored energy in a spring can start a launch.',
+    ball: { x: 150, y: 60 },
+    statics: shelf(0, W, 500, 60, { x: 850, w: 52, d: 48 }).concat([box(500, 350, 540, 500)]),
+    goal: { x: 850, y: 500, w: 52, d: 48 },
+    tray: { spring: 1, ramp: 1, cannon: 1 }, par: 2,
+    sol: [{ type: 'spring', x: 183, y: 482, a: 40 }, { type: 'ramp', x: 163, y: 142, a: 20 }, { type: 'cannon', x: 429, y: 471, a: -75 }]
+  });
+
   /* NEW_LEVELS */
   if (typeof module !== 'undefined') module.exports = RG;
 })(typeof window !== 'undefined' ? window : global);
