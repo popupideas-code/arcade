@@ -262,7 +262,7 @@ textarea.code{width:100%;height:110px;resize:none;border-radius:12px;border:1px 
         sim.manual[p.id] = p.on !== false;
         sim.magnets.push({ id: p.id, x: p.x, y: p.y, ch: p.ch || 0 });
       } else if (p.type === 'conveyor') {
-        b = add(Bodies.rectangle(p.x, p.y, d.len, d.th, { isStatic: true, angle: p.a, friction: 0, chamfer: { radius: 4 } }));
+        b = add(Bodies.rectangle(p.x - Math.sin(p.a) * 8, p.y + Math.cos(p.a) * 8, d.len, d.th + 16, { isStatic: true, angle: p.a, friction: 0, chamfer: { radius: 4 } }));
         b.__belt = true; b.__dir = { x: Math.cos(p.a) * m, y: Math.sin(p.a) * m }; b.__ch = p.ch || 0; b.__gear = p.gear || null;
         sim.belts.push(b);
       } else if (p.type === 'fan') {
