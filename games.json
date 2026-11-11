@@ -1,5 +1,13 @@
 [
   {
+    "id": "color-clash-centipede",
+    "title": "Color Clash Centipede",
+    "tagline": "Bubble shooter meets Centipede. Match eggs, shoot the head, dodge the poop, beat the boss.",
+    "path": "color-clash-centipede/",
+    "added": "2026-11-11",
+    "thumb": "color-clash-centipede/thumb.png"
+  },
+  {
     "id": "chain-reaction-lab",
     "title": "Chain Reaction Lab",
     "tagline": "Rube Goldberg physics puzzles. Springs, magnets, belts, fans and gears. Build and share your own levels.",
