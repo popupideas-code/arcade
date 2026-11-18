@@ -1541,9 +1541,9 @@ function trySmash() {
   }
   return true;
 }
-function pressJump() { if (mode === 'play' && !paused && !tryJump()) P.buf.jump = 0.14; }
+function pressJump() { if (mode === 'play' && !paused && !tryJump()) P.buf.jump = P.dashT > 0 ? P.dashT + 0.12 : 0.2; }
 function pressDash() { if (mode === 'play' && !paused) tryDash(); }
-function pressSmash() { if (mode === 'play' && !paused && !trySmash()) P.buf.smash = 0.14; }
+function pressSmash() { if (mode === 'play' && !paused && !trySmash()) P.buf.smash = P.dashT > 0 ? P.dashT + 0.12 : 0.2; }
 
 function smashBox(b, perfectOK) {
   if (b.dead) return;
@@ -1938,17 +1938,34 @@ stage.addEventListener('pointermove', (e) => {
   if (P.tube) P.tth = steerTh0 + (e.clientX - steerX0) / stage.clientWidth * Math.PI * 2 * 1.1;
   else P.tx = clamp(steerTx0 + (e.clientX - steerX0) / stage.clientWidth * W * 1.3, -LIM, LIM);
 });
-const endSteer = (e) => { if (e.pointerId === steerId) steerId = null; };
-stage.addEventListener('pointerup', endSteer); stage.addEventListener('pointercancel', endSteer);
 stage.addEventListener('contextmenu', (e) => e.preventDefault());
 
-function bindBtn(id, fn) {
-  const b = $(id);
-  b.addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); b.classList.add('down'); fn(); });
-  const up = () => b.classList.remove('down');
-  b.addEventListener('pointerup', up); b.addEventListener('pointerleave', up); b.addEventListener('pointercancel', up);
+/* The three buttons are hit-tested by screen position on every pointerdown (not by whatever element the browser says was
+   touched), with a generous margin and no dead gaps: a thumb that lands near a button, or in the gap between two, presses
+   the nearest one. A near-miss used to do nothing (or start steering), which felt like the button "not working". */
+const BTNS = [['bJump', pressJump], ['bDash', pressDash], ['bSmash', pressSmash]];
+const SLOP_X = 20, SLOP_Y = 12;                 // CSS px of forgiveness around the button column
+const btnDown = new Map();                       // pointerId -> pressed button, so it can be released
+function buttonAt(x, y) {
+  const rs = BTNS.map(([id, fn]) => { const el = $(id), r = el.getBoundingClientRect(); return { el, fn, r, cx: (r.left + r.right) / 2, cy: (r.top + r.bottom) / 2 }; });
+  if (!rs[0].r.width) return null;               // controls hidden
+  const l = Math.min(...rs.map((o) => o.r.left)) - SLOP_X, rt = Math.max(...rs.map((o) => o.r.right)) + SLOP_X;
+  const t = Math.min(...rs.map((o) => o.r.top)) - SLOP_Y, bt = Math.max(...rs.map((o) => o.r.bottom)) + SLOP_Y;
+  if (x < l || x > rt || y < t || y > bt) return null;
+  return rs.reduce((best, o) => (Math.hypot(x - o.cx, y - o.cy) < Math.hypot(x - best.cx, y - best.cy) ? o : best));
 }
-bindBtn('bJump', pressJump); bindBtn('bDash', pressDash); bindBtn('bSmash', pressSmash);
+window.addEventListener('pointerdown', (e) => {
+  if (mode !== 'play' || paused || (e.target.closest && e.target.closest('.screen,#pauseBtn'))) return;
+  const hit = buttonAt(e.clientX, e.clientY);
+  if (!hit) return;                              // not on the buttons: the stage may start steering with this finger
+  e.preventDefault(); e.stopPropagation();       // capture phase: the stage never sees it, so it can't also start steering
+  sfx.init(); hit.el.classList.add('down'); btnDown.set(e.pointerId, hit.el); hit.fn();
+}, true);
+const releasePointer = (e) => {
+  const el = btnDown.get(e.pointerId); if (el) { el.classList.remove('down'); btnDown.delete(e.pointerId); }
+  if (e.pointerId === steerId) steerId = null;
+};
+window.addEventListener('pointerup', releasePointer); window.addEventListener('pointercancel', releasePointer);
 
 const keys = {};
 window.addEventListener('keydown', (e) => {

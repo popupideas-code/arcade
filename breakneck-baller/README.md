@@ -18,6 +18,11 @@ Progress (best score, coins, upgrades, settings) is stored in `localStorage` onl
 
 The button column can be moved to the left or right hand side from the menu or the pause screen.
 
+**Touch targets:** the three buttons are hit-tested by screen position, not by which element the browser says was
+touched, with a margin of about 20 px sideways and 12 px up/down and no dead gaps between them: a thumb that lands near
+a button, or between two, presses the nearest one (and never also starts steering). A Jump or Slam pressed during a
+dash is remembered and fires as the dash ends.
+
 ## Rules of the trench
 
 - **Glowing, translucent, hatched = smashable.** Dash through it (or slam it from above).
