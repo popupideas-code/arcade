@@ -1,5 +1,13 @@
 [
   {
+    "id": "galaxy-explorer",
+    "title": "Galaxy Explorer",
+    "tagline": "Jump faster than light across the real Milky Way. Real stars and planets, 3D star systems, black holes, and sci-fi worlds, with ship time vs Earth time.",
+    "path": "galaxy-explorer/",
+    "added": "2026-11-25",
+    "thumb": "galaxy-explorer/thumb.png"
+  },
+  {
     "id": "topple",
     "title": "Topple",
     "tagline": "Build domino runs with ladders, steps, ball runs and rockets, then chase the chain in 3D. 7 themed worlds: sand, candy, disco, haunted, cosmic and lava.",
