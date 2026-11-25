@@ -1453,6 +1453,9 @@ EXO["LHS 3844"]={planets:[X('LHS 3844 b',.0062,.4629,1.3,'rockhot','A rocky worl
 EXO["AU Microscopii"]={planets:[X('AU Mic b',.0645,8.463,4.2,'icegiant','A young Neptune-size planet, found by TESS in 2020.'),X('AU Mic c',.11,18.86,3.2,'icegiant','A second young Neptune-like planet.')],belts:[{label:'Dust disk',a0:35,a1:120,cnt:1600,col:'#b8a890',h:2}]};
 EXO["HD 209458"]={planets:[X('HD 209458 b',.047,3.525,15.4,'hotjup','\'Osiris\': a puffy hot Jupiter. Its atmosphere is boiling away into a comet-like tail.')]};
 EXO["TOI-700"]={planets:[X('TOI-700 b',.0637,9.98,1.04,'rock','About Earth-size, too close to the star to be cool.'),X('TOI-700 c',.0925,16.05,2.65,'icegiant','A small Neptune-like planet.'),X('TOI-700 e',.134,27.8,.95,'rock','Earth-size, near the inner edge of the habitable zone.'),X('TOI-700 d',.163,37.42,1.19,'ocean','Earth-size and in the habitable zone, where liquid water could exist. Surface look is a guess.')]};
+// measured orbit shapes (eccentricity) for known exoplanets; others are near-circular or unknown
+{const ECC={'Pi Mensae b':.64,'Epsilon Indi Ab':.26,'Epsilon Eridani b':.07,'Ross 128 b':.12,'Proxima b':.02};
+ for(const k in EXO)for(const p of (EXO[k].planets||[]))if(ECC[p.n]!=null)p.e=ECC[p.n];}
 const FICS={
  "Alpha Centauri":[{n:'Polyphemus',fic:1,series:'Avatar',a:2.6,e:0,i:0,P:1000,Re:9,type:'gasblue',tilt:5,spin:.9,atm:[.4,.8,1,.8],note:'Avatar: the blue gas giant that Pandora orbits. Orbit is illustrative.',
    moons:[{n:'Pandora',fic:1,series:'Avatar',Re:.3,d:3.5,P:9,type:'jungle',atm:[.3,.9,.9,.8],note:'Avatar: a jungle moon with glowing plants.'}]}],
@@ -1551,7 +1554,7 @@ function byNameCls(n){const o=ENV.objs.find(x=>x.name===n);return o&&o.cls}
    ===================================================================== */
 let UI=null,renderer,scene,camera,raf=0,lastT=0,running=false,sky=null,cur=null;
 const SPH=new T.SphereGeometry(1,64,40);
-const state={hold:false,orbits:true,labels:true,mult:4,az:.6,pol:1.15,dist:200,ddist:200,tgt:new T.Vector3(),focus:null,idle:0,minD:3,maxD:900};
+const state={hold:false,orbits:true,labels:true,mult:1,az:.6,pol:1.15,dist:200,ddist:200,tgt:new T.Vector3(),focus:null,idle:0,minD:3,maxD:900};
 
 function buildUI(){
   const css=`
@@ -1593,7 +1596,7 @@ body.insys #hud,body.insys #bottom,body.insys #hint,body.insys #sheet{display:no
     title:root.querySelector('#sysTitle b'),load:root.querySelector('#sysLoad'),loadTxt:root.querySelector('#sysLoadTxt'),
     spd:root.querySelector('#sysSpd'),orb:root.querySelector('#sysOrb'),lab:root.querySelector('#sysLab'),fic:root.querySelector('#sysFic'),home:root.querySelector('#sysHome'),back:root.querySelector('#sysBack')};
   [[0,'⏸ Paused'],[.25,'⏱ ×¼'],[1,'⏱ ×1'],[4,'⏱ ×4'],[16,'⏱ ×16'],[64,'⏱ ×64'],[256,'⏱ ×256']].forEach(([v,l])=>{const o=el('option');o.value=v;o.textContent=l;UI.spd.appendChild(o)});
-  UI.spd.value=4;
+  UI.spd.value=1;
   UI.spd.onchange=()=>{state.mult=+UI.spd.value;renderCard()};
   UI.orb.onclick=()=>{state.orbits=!state.orbits;UI.orb.classList.toggle('on',state.orbits)};
   UI.lab.onclick=()=>{state.labels=!state.labels;UI.lab.classList.toggle('on',state.labels)};
@@ -1823,7 +1826,7 @@ async function makePlanet(pd,parent){
   const tilt=new T.Group();tilt.rotation.z=(pd.tilt||0)*D2R;node.add(tilt);
   const mat=new T.MeshStandardMaterial({map:tex.map,roughness:.95,metalness:0,emissiveMap:tex.emi||null,emissive:tex.emi?new T.Color(0xffffff):new T.Color(0),emissiveIntensity:tex.emiInt||0});
   const mesh=new T.Mesh(SPH,mat);mesh.scale.setScalar(rp);tilt.add(mesh);
-  const b={kind:'planet',name:pd.n,def:pd,node,radius:rp,mesh,tilt,av:mapAR(pd.a),ev:(pd.e||0)*.55,inc:(pd.i||0)*D2R,
+  const b={kind:'planet',name:pd.n,def:pd,node,radius:rp,mesh,tilt,av:mapAR(pd.a),ev:Math.min(pd.e||0,.9),inc:(pd.i||0)*D2R,
     omega:Math.random()*TAU,ang:Math.random()*TAU,fic:!!pd.fic,parent:null,spin:pd.spin||.4};
   addAtmosphere(b,pd,tilt,rp);
   if(pd.clouds&&tex.clouds){const cm=new T.Mesh(SPH,new T.MeshStandardMaterial({map:tex.clouds,transparent:true,roughness:1,depthWrite:false}));cm.scale.setScalar(rp*1.013);tilt.add(cm);b.cloud=cm}
@@ -1929,7 +1932,7 @@ function renderCard(){
   }else{
     const d=b.def,km=d.Re*6371;
     const where=b.kind==='moon'?'Moon of '+b.parent.name+' · orbit '+fmtP(d.P)+(d.P<0?' (backwards)':''):
-      (d.fic?'Orbit illustrative':fmt2(d.a)+' AU from star')+' · year '+fmtP(d.P);
+      (d.fic?'Orbit illustrative':fmt2(d.a)+' AU from star')+' · year '+fmtP(d.P)+(d.fic?'':' · orbit '+((d.e||0)<.03?'nearly circular':(d.e<.12?'slightly oval':'oval')+' (e = '+d.e.toFixed(2)+')'));
     s=(b.def.station?'Space station':(d.Re).toFixed(d.Re<1?2:1)+' × Earth radius ('+fmtKm(km)+')')+' · '+where;
   }
   card.innerHTML='<div class="t"><b>'+b.name+'</b>'+tag+'</div><div class="s">'+s+'</div><div class="n">'+(b.def.note||(b.kind==='star'?'Star at the center of this system.':''))+'</div>'}
