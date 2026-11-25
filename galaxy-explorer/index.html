@@ -80,7 +80,46 @@ select.btn{padding-right:4px;-webkit-appearance:none;appearance:none;text-align:
 #hcv{width:100%;height:220px;border-radius:12px;background:#050915;touch-action:none;flex:none;border:1px solid var(--line)}
 .hctl{display:flex;gap:6px;flex-wrap:wrap;flex:none}.hans{display:flex;gap:6px;flex:none}.hans .btn{flex:1;padding:6px 4px;font-size:13.5px}
 #hMsg{flex:1;min-height:60px}#hMsg table{width:100%}
-body.insys #hud,body.insys #topR,body.insys #bottom{display:none}
+body.insys #hud,body.insys #bMap,body.insys #hint,body.insys #bottom,body.insys #tabbar{display:none}
+:root{--tb:calc(58px + env(safe-area-inset-bottom))}
+#hud{width:auto;min-width:170px;max-width:min(268px,72vw);padding:8px 10px;cursor:pointer}
+#hud .top{display:flex;gap:8px;align-items:center}#hud .ti{flex:1;min-width:0}
+#hud .loc{padding-right:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#hud .mini{font-size:11.5px;color:var(--dim);font-variant-numeric:tabular-nums;white-space:nowrap}
+#hud .mini .tau{color:#9fe6ff}#hud .mini .te{color:#ffd28a}
+#hx{display:none;margin-top:6px}#hud.exp #hx{display:block}#hud.exp .mini{display:none}
+.ib{flex:none;width:28px;height:28px;border-radius:50%;border:1px solid var(--line);background:rgba(24,38,80,.7);color:var(--acc);font:600 14px/1 -apple-system,system-ui;padding:0;cursor:pointer}
+#bTime{position:static}
+.fab{position:fixed;right:calc(env(safe-area-inset-right) + 10px);top:calc(env(safe-area-inset-top) + 10px);width:46px;height:46px;border-radius:50%;border:1px solid var(--line);background:var(--panel);color:var(--fg);font-size:22px;padding:0;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);cursor:pointer}
+#hint{position:fixed;right:calc(env(safe-area-inset-right) + 12px);top:calc(env(safe-area-inset-top) + 62px);max-width:40vw}
+body.travel #bMap,body.travel #hint{display:none}
+#bottom{bottom:var(--tb);padding:0 calc(env(safe-area-inset-right) + 8px) 8px calc(env(safe-area-inset-left) + 8px)}
+#card .t b{flex:1;min-width:0}#card .x{width:30px;height:30px;color:var(--dim)}
+#card .n{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;cursor:pointer}#card .n.open{display:block}
+#card .f{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;cursor:pointer}#card .f.open{display:block}
+#card .trip{font-size:13px;margin:2px 0 8px;font-variant-numeric:tabular-nums}#card .trip .tau{color:#9fe6ff}#card .trip .te{color:#ffd28a}
+#card .trip small{display:block;color:var(--dim);font-size:11.5px}#card .trip a{color:var(--acc);cursor:pointer;text-decoration:underline}
+#card .b .btn{min-height:46px}
+#tabbar{position:fixed;left:0;right:0;bottom:0;height:var(--tb);padding:0 env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);display:flex;background:rgba(5,8,20,.96);border-top:1px solid var(--line);z-index:7}
+#tabbar button{flex:1;min-width:0;background:none;border:0;color:var(--dim);font:500 10.5px/1.1 -apple-system,system-ui,sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;cursor:pointer;padding:0}
+#tabbar i{font-style:normal;font-size:21px;line-height:1;filter:grayscale(.5);opacity:.8}#tabbar canvas{width:34px;height:22px}
+#tabbar .on{color:var(--acc)}#tabbar .on i{filter:none;opacity:1}
+#tabbar span{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:0 2px}
+body.travel #tabbar{opacity:.35;pointer-events:none}
+.page{position:fixed;left:0;right:0;top:0;bottom:var(--tb);background:#02030a;display:none;flex-direction:column;padding:calc(env(safe-area-inset-top) + 14px) calc(env(safe-area-inset-right) + 12px) 10px calc(env(safe-area-inset-left) + 12px);gap:9px;z-index:6}
+.page h2{margin:0;font-size:24px;font-weight:700;flex:none}
+.page #q{flex:none}
+.sheet{z-index:9}
+.qrow{display:flex;gap:8px;overflow-x:auto;padding:2px 0 10px;touch-action:pan-x}
+.qrow .btn{white-space:nowrap;min-height:38px;padding:6px 12px}
+.ship{padding:10px;gap:10px;margin-bottom:8px;align-items:flex-start;cursor:pointer}
+.ship canvas{width:96px;height:68px}
+.ship .meta{flex:1;min-width:0}
+.ship .spd{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}.ship .spd .btn{min-height:34px;padding:4px 10px;font-size:13px}
+.ship .spd .btn.on{border-color:var(--acc);color:var(--acc);background:rgba(111,211,255,.12)}
+.set .btn{width:100%;text-align:left;margin-bottom:8px;min-height:48px}
+.stat{display:flex;gap:8px;margin:4px 0 12px}.stat div{flex:1;border:1px solid var(--line);border-radius:12px;padding:8px 4px;text-align:center}.stat b{display:block;font-size:17px}.stat small{color:var(--dim);font-size:11px}
+
 </style>
 </head>
 <body>
@@ -88,83 +127,75 @@ body.insys #hud,body.insys #topR,body.insys #bottom{display:none}
 <canvas id="cv" class="full"></canvas>
 
 <div id="hud" class="panel">
-  <button id="bTime" aria-label="About the two clocks">?</button>
-  <div class="loc" id="hLoc">Sol (the Sun)</div>
-  <div class="sub" id="hSub">Ready</div>
-  <div id="clk">
-    <canvas id="dial" width="176" height="96"></canvas>
-    <div class="g">
-      <span>τ you</span><b class="tau" id="hShip">—</b>
-      <span>t Earth</span><b class="te" id="hEarth">—</b>
-      <span>Earth date</span><b id="hDate">—</b>
+  <div class="top"><div class="ti"><div class="loc" id="hLoc">Sun</div><div class="mini" id="hMini"></div></div><button class="ib" id="bTime" aria-label="About the two clocks">?</button></div>
+  <div id="hx">
+    <div class="sub" id="hSub">Ready</div>
+    <div id="clk">
+      <canvas id="dial" width="176" height="96"></canvas>
+      <div class="g">
+        <span>τ you</span><b class="tau" id="hShip">—</b>
+        <span>t Earth</span><b class="te" id="hEarth">—</b>
+        <span>Earth date</span><b id="hDate">—</b>
+      </div>
     </div>
-  </div>
-  <div id="hRow"><span>Speed</span><b id="hSpd">—</b><span>Left</span><b id="hRem">—</b></div>
-  <div id="gbar"><i id="gfill"></i></div>
-  <div id="hGam"></div>
-</div>
-<div id="topR">
-  <button class="btn sm" id="bMap">🌌 Galaxy map</button>
-  <div id="hint">Drag to look · pinch to zoom<br>Tap a star or marker</div>
-</div>
-
-<div id="bottom">
-  <div id="card" class="panel" style="display:none"></div>
-  <div id="bar">
-    <button class="btn" id="bList">☰ Places</button>
-    <button class="btn" id="bShip"><canvas id="shipIco" width="68" height="44"></canvas><span id="shipName">Ship</span></button>
-    <select class="btn" id="sSpd" aria-label="Speed setting"></select>
-    <button class="btn" id="bMore" style="flex:0 0 46px">⋯</button>
+    <div id="hRow"><span>Speed</span><b id="hSpd">—</b><span>Left</span><b id="hRem">—</b></div>
+    <div id="gbar"><i id="gfill"></i></div>
+    <div id="hGam"></div>
   </div>
 </div>
+<button id="bMap" class="fab" aria-label="Galaxy map">🌌</button>
+<div id="hint">Drag to look · pinch to zoom · tap anything</div>
 
-<div id="places" class="sheet">
-  <div class="sh"><input id="q" placeholder="Search stars, nebulae, sci-fi…" autocomplete="off" autocapitalize="off"><button class="btn" data-close>Close</button></div>
+<div id="bottom"><div id="card" class="panel" style="display:none"></div></div>
+
+<nav id="tabbar">
+  <button data-p="sky" class="on"><i>🔭</i>Explore</button>
+  <button data-p="places"><i>📍</i>Places</button>
+  <button data-p="hangar"><canvas id="shipIco" width="68" height="44"></canvas><span id="shipName">Ship</span></button>
+  <button data-p="hunt"><i>🪐</i>Hunt</button>
+  <button data-p="log"><i>🏅</i>Logbook</button>
+</nav>
+
+<div id="places" class="page">
+  <h2>Where to?</h2>
+  <input id="q" placeholder="Search stars, nebulae, sci-fi…" autocomplete="off" autocapitalize="off">
   <div class="tabs" id="ptabs">
     <button class="btn tab on" data-t="all">All</button>
-    <button class="btn tab" data-t="star">Stars</button>
-    <button class="btn tab" data-t="neb">Nebulae</button>
-    <button class="btn tab" data-t="bh">Black holes</button>
-    <button class="btn tab" data-t="gal">Galaxies</button>
-    <button class="btn tab" data-t="fic">Sci-fi</button>
+    <button class="btn tab" data-t="tours">🧭 Tours</button>
+    <button class="btn tab" data-t="star">⭐ Stars</button>
+    <button class="btn tab" data-t="neb">🌈 Nebulae</button>
+    <button class="btn tab" data-t="bh">🕳 Black holes</button>
+    <button class="btn tab" data-t="gal">🌌 Galaxies</button>
+    <button class="btn tab" data-t="fic">◇ Sci-fi</button>
   </div>
   <div class="scroll" id="list"></div>
-  <div class="foot">Real stars use approximate catalog positions. The faint background stars and glowing gas are generated to show the galaxy's shape; they are not real individual stars. Sci-fi places follow their story's own canon when it names a real star, otherwise the spot is made up.</div>
 </div>
-<div id="hangar" class="sheet">
-  <div class="sh"><h2>🚀 Pick your ship</h2><button class="btn" data-close>Done</button></div>
+<div id="hangar" class="page">
+  <h2>Your ship</h2>
   <div class="scroll" id="ships"></div>
+</div>
+<div id="log" class="page">
+  <h2>Logbook</h2>
+  <div class="scroll doc" id="logB"></div>
 </div>
 <div id="info" class="sheet">
   <div class="sh"><h2 id="infoT"></h2><button class="btn" data-close>Close</button></div>
   <div class="scroll doc" id="infoB"></div>
 </div>
-<div id="menu" class="sheet menu">
-  <div class="sh"><h2>Menu</h2><button class="btn" data-close>Close</button></div>
-  <div class="scroll">
-    <button class="btn" id="mHunt">🪐 Planet Hunter (find planets in starlight)</button>
-    <button class="btn" id="mTours">🧭 Guided tours</button>
-    <button class="btn" id="mLog">🏅 Logbook &amp; badges</button>
-    <button class="btn" id="mTime">⏱ About the two clocks</button>
-    <button class="btn" id="mFic">◇ Sci-fi places: on</button>
-    <button class="btn" id="mHelp">❓ How to play</button>
-    <button class="btn" id="mReset">↺ Start a new voyage (reset clocks)</button>
-  </div>
-</div>
 <div id="welcome" class="sheet">
   <div class="scroll doc">
     <h2 style="font-size:24px;margin:10px 0 6px">Welcome, explorer! 🚀</h2>
     <p>You're parked at our Sun. Every bright star you see is real and sits where astronomers measured it.</p>
-    <h3>1 · Pick a place</h3><p>Tap a star, a glowing nebula, a 🕳 black hole, or a ◇ sci-fi world. Or press <b>☰ Places</b>.</p>
-    <h3>2 · Pick a ship</h3><p>Each ship uses a different way to cross space: real light sails and rockets, theoretical warp drives and wormholes, or pure sci-fi jumps. Tap the ship button to read how each one works.</p>
+    <h3>1 · Pick a place</h3><p>Tap a star, a glowing nebula, a black hole, or a ◇ sci-fi world. Or open <b>📍 Places</b> at the bottom.</p>
+    <h3>2 · Pick a ship</h3><p>Each ship uses a different way to cross space: real light sails and rockets, theoretical warp drives and wormholes, or pure sci-fi jumps. Open <b>🚀 Ship</b> at the bottom to read how each one works.</p>
     <h3>3 · Watch the two clocks</h3><p><b style="color:#9fe6ff">τ</b> is <i>your</i> clock. <b style="color:#ffd28a">t</b> is Earth's clock. Fly close to light speed and Earth's clock races ahead of yours: that's Einstein's time dilation.</p>
-    <h3>4 · Hunt for planets</h3><p>In <b>⋯ → 🪐 Planet Hunter</b>, find planets the way TESS does: spot the tiny dips in a star's light when a planet passes in front.</p>
-    <h3>5 · Explore</h3><p>When you arrive, press <b>Enter system</b> to fly around the planets in 3D. Try <b>🌌 Galaxy map</b> to see where you are in the Milky Way.</p>
+    <h3>4 · Hunt for planets</h3><p>In <b>🪐 Hunt</b>, find planets the way TESS does: spot the tiny dips in a star's light when a planet passes in front.</p>
+    <h3>5 · Explore</h3><p>When you arrive, press <b>Enter system</b> to fly around the planets in 3D. Tap <b>🌌</b> (top right) to see where you are in the Milky Way.</p>
     <p style="margin-top:16px"><button class="btn go" id="bStart" style="width:100%">Let's go!</button></p>
   </div>
 </div>
-<div id="hunt" class="sheet">
-  <div class="sh"><h2>🪐 Planet Hunter</h2><button class="btn" data-close>Close</button></div>
+<div id="hunt" class="page">
+  <h2>Planet Hunter</h2>
   <div class="tabs" id="hLv"></div>
   <div id="hHead"></div>
   <canvas id="hcv"></canvas>
@@ -615,8 +646,8 @@ let fx=1,fy=0,fz=0,rx=0,ry=-1,rz=0,ux=0,uy=0,uz=1,cx=0,cy=0,focal=500,PX=0,PY=0;
 let picks=[];
 let drive='warp',speed=1000;
 const clock={E:0,S:0};let visited=new Set(['Sun']),badges=new Set(),tubes=[],tour=null;
-function save(){try{localStorage.setItem('gx2',JSON.stringify({E:clock.E,S:clock.S,visited:[...visited],badges:[...badges],tubes,drive,speed,cur:curLoc.name,fic:showFic,hunted:[...hunted]}))}catch(e){}}
-function load(){try{const s=JSON.parse(localStorage.getItem('gx2')||'null');if(!s)return false;clock.E=s.E||0;clock.S=s.S||0;visited=new Set(s.visited||['Sun']);badges=new Set(s.badges||[]);tubes=s.tubes||[];hunted=new Set(s.hunted||[]);
+function save(){try{localStorage.setItem('gx2',JSON.stringify({E:clock.E,S:clock.S,visited:[...visited],badges:[...badges],tubes,drive,speed,recent,cur:curLoc.name,fic:showFic,hunted:[...hunted]}))}catch(e){}}
+function load(){try{const s=JSON.parse(localStorage.getItem('gx2')||'null');if(!s)return false;clock.E=s.E||0;clock.S=s.S||0;visited=new Set(s.visited||['Sun']);badges=new Set(s.badges||[]);tubes=s.tubes||[];hunted=new Set(s.hunted||[]);recent=s.recent||[];
   if(DRIVES[s.drive]){drive=s.drive;speed=s.speed}showFic=s.fic!==false;const c=byName[s.cur];if(c){curLoc=c;const st=Math.min(c.stop,c.d0*.5);const k=c.d0>0?(c.d0-st)/c.d0:0;cam.x=c.pos[0]*k;cam.y=c.pos[1]*k;cam.z=c.pos[2]*k}return true}catch(e){return false}}
 
 /* ---------- projection + render ---------- */
@@ -743,11 +774,10 @@ function drawDials(dtR){
 
 /* ---------- HUD + card ---------- */
 const hLoc=$('hLoc'),hSub=$('hSub'),hSpd=$('hSpd'),hShip=$('hShip'),hEarth=$('hEarth'),hDate=$('hDate'),hRem=$('hRem'),hGam=$('hGam'),gfill=$('gfill'),card=$('card');
-const sSpd=$('sSpd'),bList=$('bList'),bShip=$('bShip');
 const locName=o=>o.kind==='fic'?o.name+' ('+o.series+')':o.name;
 function setGam(rate){const g=Math.abs(rate);gfill.style.width=clamp(Math.log10(Math.max(g,1))/3*100,0,100)+'%'}
 function hudIdle(){
-  hLoc.textContent=locName(curLoc);hDate.textContent=earthDate(clock.E);hSpd.textContent='0';hRem.textContent='—';
+  hLoc.textContent=locName(curLoc);$('hMini').innerHTML='<span class="tau">τ +'+fmtTime(clock.S)+'</span> · <span class="te">t +'+fmtTime(clock.E)+'</span> · '+earthDate(clock.E);hDate.textContent=earthDate(clock.E);hSpd.textContent='0';hRem.textContent='—';
   if(last){hSub.textContent='Last trip · '+fmtLy(last.d)+' · '+DRIVES[last.drive].ship;hShip.textContent='+'+fmtTime(last.ship);hEarth.textContent=(last.earth<0?'':'+')+fmtTime(last.earth);
     const r=last.ship>0?last.earth/last.ship:1;setGam(r);
     hGam.textContent=last.earth<0?'Earth clock went BACK: you got home before you left!':(last.ship<=0?'No time passed on either clock.':(r>1.01?'Earth aged '+fmtNum(r,r<10?2:0)+'× more than you':'Both clocks agree: no time dilation'))}
@@ -761,27 +791,31 @@ function renderCard(){
   const o=sel,dx=o.pos[0]-cam.x,dy=o.pos[1]-cam.y,dz=o.pos[2]-cam.z,dist=Math.hypot(dx,dy,dz);
   const here=o===curLoc||dist<Math.max(o.stop*1.05,0.06);
   let sub;
-  if(o.kind==='fic')sub='Sci-fi · '+(o.host?'placed at the real star '+o.host:'made-up location');
+  if(o.kind==='fic')sub='Sci-fi · '+(o.host?'at the real star '+o.host:'made-up location');
   else if(o.bh)sub=(o.mass?fmtBig(o.mass)+' × the Sun\'s mass':'Supermassive black hole');
   else if(o.kind==='lm')sub=o.sub==='gal'?'Galaxy':'Deep-sky object';
   else sub=TYPE[o.cls];
-  let info='';
+  let mid='';
   if(!here){const P=makePlan(o,true);const D=DRIVES[drive];
-    if(P){const r=P.ship>0?P.earth/P.ship:1;
-      info='<div class="e"><span>🚀 '+D.ship+'</span><b>'+D.drive+' · '+optLabel()+'</b><span style="color:#9fe6ff">τ you</span><b>'+fmtTime(P.ship)+'</b><span style="color:#ffd28a">t Earth</span><b>'+(P.earth<0?'goes BACK '+fmtTime(-P.earth)+': home just after you first left!':fmtTime(P.earth))+(r>1.05&&P.earth>0?' ('+fmtNum(r,r<10?1:0)+'× more)':'')+'</b></div>'}}
-  else{const lb=lookBack(o);info=lb?'<div class="f">🔭 '+lb+'</div>':''}
-  let tourBtn='';
-  if(tour&&here&&tour.list[tour.i]===o.name){const nx=tour.list[tour.i+1];tourBtn=nx?'<button class="btn" id="bNext">Next: '+nx+' ▸</button>':'<button class="btn" id="bNext">Finish tour ✓</button>'}
-  const goLabel=here?(canEnter(o)?'Enter system ▸':'Look around'):DRIVES[drive].verb+' ▸';
-  card.innerHTML='<div class="t"><b>'+o.name+'</b>'+tagFor(o)+(tour?'<span class="tag" style="border-color:#ffd28a;color:#ffd28a">Tour '+(tour.i+1)+'/'+tour.list.length+'</span>':'')+'</div>'+
-    '<div class="s">'+sub+' · '+(o.d0>0?fmtLy(o.d0)+' from the Sun':'home')+(here?' · you are here':' · '+fmtLy(dist)+' away')+'</div>'+
-    '<div class="n">'+o.note+'</div>'+info+(HUNT.some(x=>x.star===o.name)?'<button class="btn sm" id="bHunt" style="margin-bottom:8px;width:100%">🪐 Hunt for planets in this star\'s light'+(hunted.has(o.name)?' ✓':'')+'</button>':'')+
-    '<div class="b">'+(here&&!canEnter(o)&&!tourBtn?'':'<button class="btn go" id="bGo">'+goLabel+'</button>')+tourBtn+'<button class="btn" id="bX" aria-label="Close" style="flex:0 0 46px">✕</button></div>';
+    if(P)mid='<div class="trip">Trip time: <span class="tau">you '+fmtTime(P.ship)+'</span> · <span class="te">Earth '+(P.earth<0?'goes BACK '+fmtTime(-P.earth)+'!':fmtTime(P.earth))+'</span><small>🚀 '+D.ship+' · '+D.drive+' · '+optLabel()+' · <a id="bChg">change</a></small></div>'}
+  else{const lb=lookBack(o);if(lb)mid='<div class="f">🔭 '+lb+'</div>'}
+  const onTour=tour&&here&&tour.list[tour.i]===o.name,nx=onTour?tour.list[tour.i+1]:null;
+  let btns='';
+  if(!here)btns+='<button class="btn go" id="bGo">'+DRIVES[drive].verb+' ▸</button>';
+  else if(canEnter(o))btns+='<button class="btn'+(onTour?'':' go')+'" id="bGo" style="flex:1">Enter system ▸</button>';
+  if(onTour)btns+='<button class="btn go" id="bNext">'+(nx?'Next: '+nx+' ▸':'Finish tour ✓')+'</button>';
+  if(HUNT.some(x=>x.star===o.name))btns+='<button class="btn" id="bHunt" style="flex:0 0 auto">🪐'+(hunted.has(o.name)?' ✓':' Hunt')+'</button>';
+  card.innerHTML='<div class="t"><b>'+o.name+'</b>'+tagFor(o)+'<button class="ib x" id="bX" aria-label="Close">✕</button></div>'+
+    (tour?'<div class="s" style="color:#ffd28a">🧭 Tour · stop '+(tour.i+1)+' of '+tour.list.length+'</div>':'')+
+    '<div class="s">'+sub+' · '+(o.d0>0?fmtLy(o.d0)+' from the Sun':'home')+(here?' · <b style="color:var(--acc)">you are here</b>':' · '+fmtLy(dist)+' away')+'</div>'+
+    '<div class="n">'+o.note+'</div>'+mid+(btns?'<div class="b">'+btns+'</div>':'');
   card.style.display='block';
+  card.querySelectorAll('.n,.f').forEach(e=>e.onclick=()=>e.classList.toggle('open'));
   const bg=$('bGo');if(bg)bg.onclick=()=>{if(here){if(canEnter(o))enterSystem(o)}else startJump(o)};
   $('bX').onclick=()=>{sel=null;renderCard()};
+  const bc=$('bChg');if(bc)bc.onclick=()=>showPage('hangar');
   const bh=$('bHunt');if(bh)bh.onclick=()=>openHunt(o.name);
-  const bn=$('bNext');if(bn)bn.onclick=()=>{tour.i++;const nx=tour.list[tour.i];if(!nx){tour=null;say('🏁 Tour complete! Great exploring.');renderCard();return}select(byName[nx],true)};
+  const bn=$('bNext');if(bn)bn.onclick=()=>{tour.i++;const n2=tour.list[tour.i];if(!n2){tour=null;say('🏁 Tour complete! Great exploring.');renderCard();return}select(byName[n2],true)};
 }
 function optLabel(){const o=DRIVES[drive].opts.find(x=>x[0]===speed);return o?o[1]:''}
 function select(o,turnTo){sel=o;if(cam.back>500&&turnTo){}renderCard();if(turnTo)startTurn(o)}
@@ -818,11 +852,11 @@ function makePlan(o,preview){
   return P}
 function startJump(o){
   if(trav)return;const P=makePlan(o);if(!P)return;
-  cam.bT=0;cam.pT=null;bMap.textContent='🌌 Galaxy map';
+  cam.bT=0;cam.pT=null;bMap.textContent='🌌';
   const a=angTo(o);
   P.sx=cam.x;P.sy=cam.y;P.sz=cam.z;P.t0=performance.now();P.u=0;P.st=P.at(0);
   P.y0=cam.yaw;P.p0=cam.pitch;P.y1=cam.yaw+wrap(a.yaw-cam.yaw);P.p1=clamp(a.pitch,-1.5,1.5);P.from=curLoc;P.E0=clock.E;P.S0=clock.S;
-  trav=P;turn=null;[sSpd,bList,bShip].forEach(x=>x.disabled=true);
+  trav=P;turn=null;document.body.classList.add('travel');$('hud').classList.add('exp');
   hLoc.textContent=curLoc.name+' → '+o.name;hSub.textContent=DRIVES[drive].ship+' · '+DRIVES[drive].drive;
   dialRate=1;renderCard();
 }
@@ -831,7 +865,8 @@ function endJump(){
   clock.E=t.E0+t.earth;clock.S=t.S0+t.ship;
   last={d:t.d,earth:t.earth,ship:t.ship,drive:t.drive};
   if(t.kind==='kras'&&t.build)tubes.push({a:t.from.name,b:t.o.name,t0:t.E0});
-  curLoc=t.o;sel=t.o;trav=null;[sSpd,bList,bShip].forEach(x=>x.disabled=false);
+  curLoc=t.o;sel=t.o;trav=null;document.body.classList.remove('travel');setTimeout(()=>{if(!trav)$('hud').classList.remove('exp')},6000);
+  recent=[t.o.name].concat(recent.filter(n=>n!==t.o.name)).slice(0,8);
   visited.add(t.o.name);checkBadges(t);save();
   hudIdle();renderCard();
 }
@@ -879,47 +914,56 @@ function tap(x,y){let best=null,bd=40*40;
   if(trav)return;
   if(best)select(best,false);else if(sel){sel=null;renderCard()}}
 const bMap=$('bMap');
-function setMap(on){if(on){cam.bT=70000;cam.pT=-1.2;cam.zoom=1;const a=angTo({pos:[GC,0,0]});if(a)cam.yaw=a.yaw;bMap.textContent='✕ Exit map'}else{cam.bT=0;cam.pT=0;bMap.textContent='🌌 Galaxy map'}}
+function setMap(on){if(on){cam.bT=70000;cam.pT=-1.2;cam.zoom=1;const a=angTo({pos:[GC,0,0]});if(a)cam.yaw=a.yaw;bMap.textContent='✕'}else{cam.bT=0;cam.pT=0;bMap.textContent='🌌'}}
 bMap.onclick=()=>{if(trav)return;setMap(cam.bT<500)};
 
-/* ---------- controls ---------- */
-function fillSpeeds(keep){const D=DRIVES[drive];sSpd.innerHTML='';D.opts.forEach(([v,l])=>{const op=document.createElement('option');op.value=v;op.textContent=l;sSpd.appendChild(op)});
-  const i=keep?D.opts.findIndex(o=>o[0]===speed):-1;sSpd.selectedIndex=i>=0?i:D.def;speed=+sSpd.value;sSpd.disabled=D.opts.length<2;
+/* ---------- controls / navigation ---------- */
+function fillSpeeds(keep){const D=DRIVES[drive];const i=keep?D.opts.findIndex(o=>o[0]===speed):-1;speed=D.opts[i>=0?i:D.def][0];
   $('shipName').textContent=D.ship;const ic=$('shipIco').getContext('2d');ic.setTransform(1,0,0,1,0,0);ic.clearRect(0,0,68,44);drawShip(ic,drive,34,22,19,0,.6)}
-sSpd.onchange=()=>{speed=+sSpd.value;save();renderCard()};
-function setFic(on){showFic=on;$('mFic').textContent='◇ Sci-fi places: '+(on?'on':'off');if(!on&&sel&&sel.kind==='fic'){sel=null;renderCard()}save()}
-const sheets=['places','hangar','info','menu','welcome','hunt'];
-function openSheet(id){sheets.forEach(s=>$(s).style.display=s===id?'flex':'none')}
-function closeSheets(){sheets.forEach(s=>$(s).style.display='none')}
-document.querySelectorAll('[data-close]').forEach(b=>b.onclick=closeSheets);
+const PAGES=['places','hangar','hunt','log'],MODALS=['info','welcome'];let curPage='sky',recent=[];
+function setFic(on){showFic=on;if(!on&&sel&&sel.kind==='fic'){sel=null;renderCard()}save();if(curPage==='log')buildLog()}
+function showPage(p){curPage=p;PAGES.forEach(s=>$(s).style.display=s===p?'flex':'none');document.querySelectorAll('#tabbar button').forEach(b=>b.classList.toggle('on',b.dataset.p===p));
+  if(p==='places')buildList();else if(p==='hangar')buildHangar();else if(p==='log')buildLog();else if(p==='hunt'&&!HS)huntLoad(Math.max(0,HUNT.findIndex(x=>!hunted.has(x.star))))}
+function openSheet(id){if(PAGES.includes(id)){showPage(id);return}$(id).style.display='flex'}
+function closeModals(){MODALS.forEach(s=>$(s).style.display='none')}
+function closeSheets(){closeModals();showPage('sky')}
+document.querySelectorAll('[data-close]').forEach(b=>b.onclick=closeModals);
+document.querySelectorAll('#tabbar button').forEach(b=>b.onclick=()=>showPage(b.dataset.p));
+function goTo(o){showPage('sky');if(o.kind==='fic'&&!showFic)setFic(true);if(cam.bT>500)setMap(false);select(o,true)}
+$('hud').onclick=e=>{if(e.target.id==='bTime')return;$('hud').classList.toggle('exp')};
 // places
 const list=$('list'),q=$('q');let tab='all';
 const cat=o=>o.kind==='fic'?'fic':o.bh?'bh':o.kind==='lm'?(o.sub==='gal'?'gal':'neb'):'star';
+function rowFor(o){const r=document.createElement('div');r.className='row';const c=cat(o);
+  const sub=c==='fic'?'<small class="f">◇ '+o.series+(o.host?' · at '+o.host:'')+'</small>':c==='bh'?'<small class="k">Black hole</small>':c==='neb'||c==='gal'?'<small class="nb">'+(c==='gal'?'Galaxy':'Nebula / cluster')+'</small>':'<small>'+TYPE[o.cls]+'</small>';
+  r.innerHTML='<div class="a"><span>'+(visited.has(o.name)?'✓ ':'')+o.name+(o===curLoc?' <b style="color:var(--acc);font-size:12px">· here</b>':'')+'</span>'+sub+'</div><div class="d">'+(o.d0>0?fmtLy(o.d0):'home')+'</div>';
+  r.onclick=()=>goTo(o);return r}
 function buildList(){
-  const term=q.value.trim().toLowerCase();
-  const rows=objs.filter(o=>(tab==='all'||cat(o)===tab)&&(!term||(o.name+' '+(o.series||'')+' '+(o.host||'')).toLowerCase().includes(term)));
-  rows.sort((a,b)=>tab==='fic'?(a.series+a.name).localeCompare(b.series+b.name):a.d0-b.d0);
-  list.innerHTML='';
-  for(const o of rows){const r=document.createElement('div');r.className='row';const c=cat(o);
-    const sub=c==='fic'?'<small class="f">◇ '+o.series+(o.host?' · at '+o.host:'')+'</small>':c==='bh'?'<small class="k">🕳 Black hole</small>':c==='neb'||c==='gal'?'<small class="nb">'+(c==='gal'?'Galaxy':'Nebula / cluster')+'</small>':'<small>'+TYPE[o.cls]+'</small>';
-    r.innerHTML='<div class="a"><span>'+(visited.has(o.name)?'✓ ':'')+o.name+'</span>'+sub+'</div><div class="d">'+(o.d0>0?fmtLy(o.d0):'home')+'</div>';
-    r.onclick=()=>{closeSheets();if(o.kind==='fic'&&!showFic)setFic(true);if(cam.bT>500)setMap(false);select(o,true)};
-    list.appendChild(r)}
-  if(!rows.length)list.innerHTML='<div class="row"><span style="color:var(--dim)">No matches</span></div>'
-}
-bList.onclick=()=>{openSheet('places');buildList()};
+  const term=q.value.trim().toLowerCase();list.innerHTML='';
+  if(tab==='tours'&&!term){
+    list.innerHTML='<p class="foot" style="margin:2px 4px 6px">Pick a tour. After each stop, press <b>Next</b> on the card.</p>'+TOURS.map((t,i)=>'<div class="row" data-tour="'+i+'"><div class="a"><span>'+t[0]+' '+t[1]+'</span><small>'+t[2].join(' → ')+'</small></div><div class="d">'+(tour&&tour.name===t[1]?'on tour':'▸')+'</div></div>').join('');
+    list.querySelectorAll('[data-tour]').forEach(r=>r.onclick=()=>{const t=TOURS[+r.dataset.tour];tour={name:t[1],list:t[2],i:0};if(t[1].includes('sci-fi'))setFic(true);goTo(byName[t[2][0]]);say(t[0]+' '+t[1]+': first stop '+t[2][0])});return}
+  if(tab==='all'&&!term){const qr=document.createElement('div');qr.className='qrow';
+    const quick=[sun].concat(recent.map(n=>byName[n]).filter(o=>o&&o!==sun)).slice(0,7);
+    quick.forEach(o=>{const b=document.createElement('button');b.className='btn';b.textContent=(o===sun?'🏠 Home (Sun)':'🕘 '+o.name);b.onclick=()=>goTo(o);qr.appendChild(b)});list.appendChild(qr)}
+  const T=tab==='tours'?'all':tab;
+  const rows=objs.filter(o=>(T==='all'||cat(o)===T)&&(o.kind!=='fic'||showFic||T==='fic'||term)&&(!term||(o.name+' '+(o.series||'')+' '+(o.host||'')).toLowerCase().includes(term)));
+  rows.sort((a,b)=>T==='fic'?(a.series+a.name).localeCompare(b.series+b.name):a.d0-b.d0);
+  rows.forEach(o=>list.appendChild(rowFor(o)));
+  if(!rows.length)list.insertAdjacentHTML('beforeend','<div class="row"><span style="color:var(--dim)">No matches</span></div>');
+  list.insertAdjacentHTML('beforeend','<p class="foot" style="margin:10px 4px">Real stars use approximate catalog positions. Background stars and glowing gas are generated to show the galaxy\'s shape. Sci-fi places follow their story when it names a real star; otherwise the spot is made up.</p>')}
 q.oninput=buildList;
-document.querySelectorAll('#ptabs .tab').forEach(b=>b.onclick=()=>{tab=b.dataset.t;document.querySelectorAll('#ptabs .tab').forEach(x=>x.classList.toggle('on',x===b));buildList()});
+document.querySelectorAll('#ptabs .tab').forEach(b=>b.onclick=()=>{tab=b.dataset.t;document.querySelectorAll('#ptabs .tab').forEach(x=>x.classList.toggle('on',x===b));buildList();list.scrollTop=0});
 // hangar
-function buildHangar(){const box=$('ships');box.innerHTML='';
-  for(const k of DKEYS){const D=DRIVES[k];const d=document.createElement('div');d.className='ship'+(k===drive?' on':'');
-    d.innerHTML='<canvas width="240" height="168"></canvas><div style="flex:1;min-width:0"><h3>'+D.ship+'</h3><span class="tg '+D.tag+'" style="margin:0">'+D.tagT+'</span><div class="dr">'+D.drive+'</div>'+
-      '<p>'+D.how+'</p><details><summary>The catch · clocks · seen in</summary><p><b>The catch:</b> '+D.catch+'</p><p><b>Clocks:</b> '+D.clocks+'</p><p><b>Seen in:</b> '+D.seen+'</p></details>'+
-      '<p><button class="btn sm'+(k===drive?'':' go')+'" style="margin-top:4px">'+(k===drive?'✓ Selected':'Fly this ship')+'</button></p></div>';
-    const c=d.querySelector('canvas').getContext('2d');c.scale(2,2);drawShip(c,k,60,44,30,1,.8);
-    d.querySelector('button').onclick=()=>{drive=k;fillSpeeds(false);save();buildHangar();renderCard();say('🚀 '+D.ship+' ready · '+D.drive)};
+function buildHangar(){const box=$('ships');box.innerHTML='<p class="foot" style="margin:0 0 8px">Tap a ship to fly it. Each one crosses space a different way.</p>';
+  for(const k of DKEYS){const D=DRIVES[k],on=k===drive;const d=document.createElement('div');d.className='ship'+(on?' on':'');
+    d.innerHTML='<canvas width="192" height="136"></canvas><div class="meta"><h3>'+D.ship+(on?' <span style="color:var(--acc);font-size:13px">✓ flying</span>':'')+'</h3><div class="dr">'+D.drive+'</div><span class="tg '+D.tag+'" style="margin:0">'+D.tagT+'</span>'+
+      (on&&D.opts.length>1?'<div class="spd">'+D.opts.map(o=>'<button class="btn'+(o[0]===speed?' on':'')+'" data-v="'+o[0]+'">'+o[1]+'</button>').join('')+'</div>':'')+
+      '<details'+(on?' open':'')+'><summary>How it works</summary><p>'+D.how+'</p><p><b>The catch:</b> '+D.catch+'</p><p><b>Clocks:</b> '+D.clocks+'</p><p><b>Seen in:</b> '+D.seen+'</p></details></div>';
+    const c=d.querySelector('canvas').getContext('2d');c.scale(2,2);drawShip(c,k,48,34,24,1,.8);
+    d.onclick=e=>{if(e.target.closest('details')||e.target.closest('.spd')||on)return;drive=k;fillSpeeds(false);save();buildHangar();renderCard();say('🚀 '+D.ship+' ready · '+D.drive)};
+    d.querySelectorAll('.spd .btn').forEach(b=>b.onclick=()=>{speed=+b.dataset.v;save();buildHangar();renderCard()});
     box.appendChild(d)}}
-bShip.onclick=()=>{openSheet('hangar');buildHangar()};
 // info docs
 function showInfo(title,html){$('infoT').textContent=title;$('infoB').innerHTML=html;openSheet('info');$('infoB').scrollTop=0}
 const TIME_DOC=`<h3>Two clocks</h3><p><b style="color:#9fe6ff">τ</b> ("tau") is <b>your</b> clock, the time you feel on the ship. Physicists call it <i>proper time</i>.</p><p><b style="color:#ffd28a">t</b> is <b>Earth's</b> clock, the time that passes for everyone back home.</p>
@@ -931,21 +975,12 @@ const TIME_DOC=`<h3>Two clocks</h3><p><b style="color:#9fe6ff">τ</b> ("tau") is
 <h3>Faster than light?</h3><p>Nothing can move <i>through</i> space faster than light. But Einstein's theory lets space itself bend and stretch. Warp bubbles and wormholes use that loophole. They need "exotic matter" with negative energy, which nobody has found. And any faster-than-light trip can be turned into a time machine (try the Krasnikov tube ship!), which is why many physicists think nature forbids it.</p>
 <h3>Constant thrust</h3><p>A ship that accelerates at 1 g the whole way (and flips to slow down halfway) gets closer and closer to light speed. You could cross to the Andromeda Galaxy in about 28 years of your time, while 2.5 million years pass on Earth.</p>`;
 $('bTime').onclick=()=>showInfo('⏱ About the two clocks',TIME_DOC);
-$('bMore').onclick=()=>openSheet('menu');
-$('mTime').onclick=()=>showInfo('⏱ About the two clocks',TIME_DOC);
-$('mFic').onclick=()=>setFic(!showFic);
-$('mHelp').onclick=()=>openSheet('welcome');
-$('mReset').onclick=()=>{clock.E=0;clock.S=0;tubes=[];last=null;tour=null;save();hudIdle();renderCard();closeSheets();say('New voyage: both clocks reset.')};
-// tours
 const TOURS=[['🌟','Our nearest neighbors',['Proxima Centauri','Alpha Centauri',"Barnard's Star",'Wolf 359','Sirius','Sun']],
   ['🔭','JWST greatest hits',['Rho Ophiuchi','Southern Ring Nebula','Carina Nebula','Pillars of Creation','Orion Nebula','Crab Nebula']],
   ['🕳','Black hole hunt',['Gaia BH1','A0620-00 (V616 Mon)','Cygnus X-1','Galactic Center (Sgr A*)','M87*']],
   ['◇','Famous sci-fi worlds',['Vulcan','Pandora','LV-426','Arrakis','Trantor','Tatooine']],
   ['🔴','Giant stars',['Arcturus','Aldebaran','Betelgeuse','Rigel','Antares','Deneb']],
   ['🌌','Leaving the galaxy',['Omega Centauri','Large Magellanic Cloud','Andromeda Galaxy','M87*']]];
-$('mTours').onclick=()=>{showInfo('🧭 Guided tours','<p>Pick a tour. After each arrival, press <b>Next</b> on the card.</p>'+TOURS.map((t,i)=>'<div class="row" data-tour="'+i+'"><div class="a"><span>'+t[0]+' '+t[1]+'</span><small>'+t[2].join(' → ')+'</small></div><div class="d">▸</div></div>').join(''));
-  document.querySelectorAll('[data-tour]').forEach(r=>r.onclick=()=>{const t=TOURS[+r.dataset.tour];tour={list:t[2],i:0};closeSheets();if(cam.bT>500)setMap(false);if(t[1].includes('sci-fi'))setFic(true);select(byName[t[2][0]],true);say(t[0]+' '+t[1]+': first stop '+t[2][0])})};
-// badges
 const BADGES=[['first','🚀','First jump'],['neighbor','👋','Visited a neighbor star'],['bh1','🕳','Found a black hole'],['bh3','⚫','Black hole hunter (3)'],['neb3','🌈','Nebula explorer (3)'],['scifi5','◇','Sci-fi tourist (5)'],['gal','🌌','Left the Milky Way'],['speed','⚡','γ over 100'],['time','⏳','1,000 Earth years passed'],['kras','🔁','Home before you left'],['worm','🌀','Wormhole rider'],['far','🔭','A billion light-years'],['hunter','🪐','Planet hunter'],['hunter_all','🏆','Solved every light curve']];
 function addBadge(k){if(!badges.has(k)){badges.add(k);save();const b=BADGES.find(x=>x[0]===k);say(b[1]+' Badge earned: '+b[2])}}
 function checkBadges(t){const got=addBadge;
@@ -954,11 +989,17 @@ function checkBadges(t){const got=addBadge;
   const nbh=vs.filter(o=>o.bh).length;if(nbh>=1)got('bh1');if(nbh>=3)got('bh3');
   if(vs.filter(o=>o.kind==='lm'&&!o.bh&&o.sub!=='gal').length>=3)got('neb3');if(vs.filter(o=>o.kind==='fic').length>=5)got('scifi5');
   if(t.o.d0>60000)got('gal');if(t.ship>0&&t.earth/t.ship>100)got('speed');if(clock.E>=1000)got('time');if(t.kind==='kras'&&!t.build)got('kras');if(t.kind==='worm')got('worm');if(t.d>1e9)got('far')}
-$('mLog').onclick=()=>{const total=objs.length;
-  showInfo('🏅 Logbook','<p><b>'+visited.size+'</b> of '+total+' places visited.</p><p>Voyage clocks: <b style="color:#9fe6ff">you +'+fmtTime(clock.S)+'</b> · <b style="color:#ffd28a">Earth +'+fmtTime(clock.E)+'</b><br>Earth date now: <b>'+earthDate(clock.E)+'</b></p><div>'+BADGES.map(b=>'<div class="badge'+(badges.has(b[0])?' got':'')+'"><i>'+b[1]+'</i>'+b[2]+'</div>').join('')+'</div>'+
-  '<h3>Visited</h3><p>'+[...visited].join(' · ')+'</p>')};
+function buildLog(){
+  $('logB').innerHTML='<div class="stat"><div><b>'+visited.size+'</b><small>places visited</small></div><div><b>'+badges.size+'/'+BADGES.length+'</b><small>badges</small></div><div><b>'+hunted.size+'/'+HUNT.length+'</b><small>light curves</small></div></div>'+
+    '<p>Voyage clocks: <b style="color:#9fe6ff">you +'+fmtTime(clock.S)+'</b> · <b style="color:#ffd28a">Earth +'+fmtTime(clock.E)+'</b><br>Earth date now: <b>'+earthDate(clock.E)+'</b></p>'+
+    '<div>'+BADGES.map(b=>'<div class="badge'+(badges.has(b[0])?' got':'')+'"><i>'+b[1]+'</i>'+b[2]+'</div>').join('')+'</div>'+
+    '<h3>Visited</h3><p>'+[...visited].join(' · ')+'</p>'+
+    '<h3>Settings</h3><div class="set"><button class="btn" id="lFic">◇ Sci-fi places: '+(showFic?'shown':'hidden')+'</button><button class="btn" id="lTime">⏱ About the two clocks</button><button class="btn" id="lHelp">❓ How to play</button><button class="btn" id="lReset">↺ Start a new voyage (reset clocks)</button></div>';
+  $('lFic').onclick=()=>setFic(!showFic);$('lTime').onclick=()=>showInfo('⏱ About the two clocks',TIME_DOC);$('lHelp').onclick=()=>openSheet('welcome');
+  $('lReset').onclick=()=>{clock.E=0;clock.S=0;tubes=[];last=null;tour=null;save();hudIdle();renderCard();buildLog();say('New voyage: both clocks reset.')}}
 // welcome
-$('bStart').onclick=()=>{closeSheets();try{localStorage.setItem('gx2_seen','1')}catch(e){}};
+$('bStart').onclick=()=>{closeModals();try{localStorage.setItem('gx2_seen','1')}catch(e){}};
+
 
 /* ---------- 3D system view (lazy-loaded) ---------- */
 let sysP=null;
@@ -988,7 +1029,7 @@ const HUNT=[
  {star:'Tau Ceti',Rs:.79,M:.78,sigma:.00045,spots:{A:.0005,P:34},answer:'none',planets:[],
   intro:'A Sun-like star just 12 light-years away. Look carefully. Are there dips that repeat?',
   fact:'Tau Ceti probably has planets, but their orbits are tilted, so from Earth they never pass in front of the star. The transit method only works when we see an orbit edge-on.'},
- {star:'Pi Mensae',Rs:1.1,M:1.09,sigma:.00011,extraGap:1,red:.4,answer:'planet',planets:[{n:'Pi Mensae c',P:6.268,Rp:2.04}],
+ {star:'Pi Mensae',Rs:1.1,M:1.09,sigma:.00011,red:.4,extraGap:1,red:.4,answer:'planet',planets:[{n:'Pi Mensae c',P:6.268,Rp:2.04}],
   intro:'This one is harder: the dips are tiny, and there\'s an extra chunk of missing data. Use + to zoom in and the strip below to slide along.',
   fact:'Pi Mensae c was the very first new planet discovered by TESS, in 2018. It blocks only 0.03% of its star\'s light.'},
  {star:'TIC 0000001 (made-up star)',Rs:1,M:1,sigma:.002,eb:{P:3.1,d1:.32,d2:.11,D:.32},answer:'eb',planets:[],
@@ -1003,7 +1044,7 @@ const HUNT=[
  {star:'TRAPPIST-1',Rs:.119,M:.09,sigma:.0021,span:20,answer:'planet',need:6,planets:[{n:'TRAPPIST-1 b',P:1.511,Rp:1.12},{n:'TRAPPIST-1 c',P:2.422,Rp:1.1},{n:'TRAPPIST-1 d',P:4.05,Rp:.79},{n:'TRAPPIST-1 e',P:6.1,Rp:.92},{n:'TRAPPIST-1 f',P:9.21,Rp:1.05},{n:'TRAPPIST-1 g',P:12.35,Rp:1.13},{n:'TRAPPIST-1 h',P:18.77,Rp:.76}],
   intro:'A tiny, faint red star with LOTS going on. Dips of different depths mean different planets. Box at least 6.',
   fact:'TRAPPIST-1 has seven Earth-size planets, and three are in the zone where liquid water could exist. (They were found by other telescopes; this light curve is simulated.)'},
- {star:'TOI-700',Rs:.42,M:.42,sigma:.00035,extraGap:1,red:.5,span:54.8,answer:'planet',need:3,planets:[{n:'TOI-700 b',P:9.98,Rp:1.04},{n:'TOI-700 c',P:16.05,Rp:2.65},{n:'TOI-700 e',P:27.8,Rp:.95},{n:'TOI-700 d',P:37.42,Rp:1.19}],
+ {star:'TOI-700',Rs:.42,M:.42,sigma:.00035,red:.5,extraGap:1,red:.5,span:54.8,answer:'planet',need:3,planets:[{n:'TOI-700 b',P:9.98,Rp:1.04},{n:'TOI-700 c',P:16.05,Rp:2.65},{n:'TOI-700 e',P:27.8,Rp:.95},{n:'TOI-700 d',P:37.42,Rp:1.19}],
   intro:'The final challenge: two months of TESS data. Somewhere in here is an Earth-size planet in the habitable zone.',
   fact:'TOI-700 d was the first Earth-size planet in a habitable zone found by TESS (2020). Volunteers and astronomers combed through light curves just like this one.'}
 ];
@@ -1140,11 +1181,10 @@ function huntAnswer(a){const L=HS.L,hit=new Set(),notes=[];
   if(byName[L.star])h+='<button class="btn go" id="hVisit">Visit '+L.star+' ▸</button>';
   if(HS.i<HUNT.length-1)h+='<button class="btn" id="hNext">Next star ▸</button>';
   h+='</div>';say2(h);
-  const bv=$('hVisit');if(bv)bv.onclick=()=>{closeSheets();if(cam.bT>500)setMap(false);select(byName[L.star],true)};
+  const bv=$('hVisit');if(bv)bv.onclick=()=>goTo(byName[L.star]);
   const bn=$('hNext');if(bn)bn.onclick=()=>huntLoad(HS.i+1);
   if(first){addBadge('hunter');if(HUNT.every(x=>hunted.has(x.star)))addBadge('hunter_all')}}
 function openHunt(name){openSheet('hunt');const i=Math.max(0,name?HUNT.findIndex(x=>x.star===name):HUNT.findIndex(x=>!hunted.has(x.star)));requestAnimationFrame(()=>huntLoad(i<0?0:i))}
-$('mHunt').onclick=()=>openHunt();
 addEventListener('resize',()=>{if(HS&&$('hunt').style.display==='flex')drawHunt()});
 
 try{initGL()}catch(e){console.error(e);say('This device could not start WebGL: '+e.message)}
