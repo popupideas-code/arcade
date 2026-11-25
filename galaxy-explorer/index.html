@@ -76,7 +76,8 @@ select.btn{padding-right:4px;-webkit-appearance:none;appearance:none;text-align:
 .menu .btn{width:100%;text-align:left;margin-bottom:8px;font-size:15px;min-height:50px}
 #welcome .doc{max-width:520px;margin:0 auto}
 #toast{position:fixed;left:50%;top:calc(env(safe-area-inset-top) + 76px);transform:translateX(-50%);background:rgba(8,12,28,.94);border:1px solid rgba(255,210,138,.5);padding:9px 14px;border-radius:12px;z-index:20;display:none;max-width:88vw;font-size:13.5px;text-align:center}
-#hunt .sh h2{font-size:18px}#hcv{width:100%;height:230px;border-radius:12px;background:#050915;touch-action:none;flex:none;border:1px solid var(--line)}
+#hunt .sh h2{font-size:18px}#hov{width:100%;height:34px;border-radius:8px;background:#050915;touch-action:none;flex:none;border:1px solid var(--line)}
+#hcv{width:100%;height:220px;border-radius:12px;background:#050915;touch-action:none;flex:none;border:1px solid var(--line)}
 .hctl{display:flex;gap:6px;flex-wrap:wrap;flex:none}.hans{display:flex;gap:6px;flex:none}.hans .btn{flex:1;padding:6px 4px;font-size:13.5px}
 #hMsg{flex:1;min-height:60px}#hMsg table{width:100%}
 body.insys #hud,body.insys #topR,body.insys #bottom{display:none}
@@ -167,7 +168,8 @@ body.insys #hud,body.insys #topR,body.insys #bottom{display:none}
   <div class="tabs" id="hLv"></div>
   <div id="hHead"></div>
   <canvas id="hcv"></canvas>
-  <div class="hctl"><button class="btn sm" id="hZo">− Zoom out</button><button class="btn sm" id="hZi">+ Zoom in</button><button class="btn sm" id="hAll">Whole graph</button><button class="btn sm" id="hHint">💡 Hint</button><button class="btn sm" id="hClr">Clear marks</button></div>
+  <canvas id="hov"></canvas>
+  <div class="hctl"><button class="btn sm" id="hZo">−</button><button class="btn sm" id="hZi">+</button><button class="btn sm" id="hAll">Whole</button><button class="btn sm" id="hHint">💡 Hint</button><button class="btn sm" id="hClr">Clear</button><button class="btn sm" id="hKey">❓ Graph key</button></div>
   <div class="scroll doc" id="hMsg"></div>
   <div class="hans"><button class="btn" data-a="planet">🪐 Planet!</button><button class="btn" data-a="eb">⭐⭐ Two stars</button><button class="btn" data-a="none">😴 Nothing</button></div>
 </div>
@@ -981,117 +983,159 @@ async function enterSystem(o){
 const RE_RS=0.009168,ZOO='https://www.zooniverse.org/projects/nora-dot-eisner/planet-hunters-tess/classify/workflow/11235';
 const HUNT=[
  {star:'HD 209458',Rs:1.16,M:1.15,sigma:.0008,answer:'planet',planets:[{n:'HD 209458 b',P:3.5247,Rp:15.4}],
-  intro:'Start easy. This star\'s light dips when something passes in front of it. Tap each dip you see.',
+  intro:'Start easy. This star\'s light dips when something passes in front of it. Draw a box around each dip you see. Zoom in with + to make boxing easier.',
   fact:'In 1999, HD 209458 b became the first planet ever seen crossing in front of its star. Astronomers nicknamed it Osiris.'},
  {star:'Tau Ceti',Rs:.79,M:.78,sigma:.00045,spots:{A:.0005,P:34},answer:'none',planets:[],
   intro:'A Sun-like star just 12 light-years away. Look carefully. Are there dips that repeat?',
   fact:'Tau Ceti probably has planets, but their orbits are tilted, so from Earth they never pass in front of the star. The transit method only works when we see an orbit edge-on.'},
- {star:'Pi Mensae',Rs:1.1,M:1.09,sigma:.00011,answer:'planet',planets:[{n:'Pi Mensae c',P:6.268,Rp:2.04}],
-  intro:'This one is harder: the dips are tiny. Use + to zoom in and drag to slide along.',
+ {star:'Pi Mensae',Rs:1.1,M:1.09,sigma:.00011,extraGap:1,red:.4,answer:'planet',planets:[{n:'Pi Mensae c',P:6.268,Rp:2.04}],
+  intro:'This one is harder: the dips are tiny, and there\'s an extra chunk of missing data. Use + to zoom in and the strip below to slide along.',
   fact:'Pi Mensae c was the very first new planet discovered by TESS, in 2018. It blocks only 0.03% of its star\'s light.'},
  {star:'TIC 0000001 (made-up star)',Rs:1,M:1,sigma:.002,eb:{P:3.1,d1:.32,d2:.11,D:.32},answer:'eb',planets:[],
-  intro:'Whoa, big dips! Mark them, then decide: is it a planet, or something else?',
+  intro:'Whoa, big dips! Box them, then decide: is it a planet, or something else?',
   fact:'This is an eclipsing binary: two stars taking turns blocking each other. Clues: the dips are far too deep for a planet (even Jupiter blocks only about 1% of a Sun-like star), and every other dip is shallower. These fool planet hunters all the time!'},
- {star:'AU Microscopii',Rs:.75,M:.5,sigma:.0005,spots:{A:.0035,P:4.86},flares:14,answer:'planet',planets:[{n:'AU Mic b',P:8.463,Rp:4.2},{n:'AU Mic c',P:18.86,Rp:3.2}],need:2,
+ {star:'AU Microscopii',Rs:.75,M:.5,sigma:.0005,extraGap:1,spots:{A:.0035,P:4.86},flares:14,answer:'planet',planets:[{n:'AU Mic b',P:8.463,Rp:4.2},{n:'AU Mic c',P:18.86,Rp:3.2}],need:2,
   intro:'A baby star covered in starspots, so its light waves up and down. Spikes UP are flares. Planets only make dips DOWN.',
   fact:'AU Mic is only about 22 million years old. Its planets were found by TESS in 2020, even through all the flares and spots.'},
  {star:'LHS 3844',Rs:.19,M:.15,sigma:.0016,answer:'planet',planets:[{n:'LHS 3844 b',P:.4629,Rp:1.3}],need:4,
-  intro:'A small red dwarf. Lots of dips here. Mark at least 4.',
+  intro:'A small red dwarf. Lots of dips here. Box at least 4, and watch out for the glitches.',
   fact:'LHS 3844 b goes around its star every 11 hours. A whole year there is shorter than a school day!'},
  {star:'TRAPPIST-1',Rs:.119,M:.09,sigma:.0021,span:20,answer:'planet',need:6,planets:[{n:'TRAPPIST-1 b',P:1.511,Rp:1.12},{n:'TRAPPIST-1 c',P:2.422,Rp:1.1},{n:'TRAPPIST-1 d',P:4.05,Rp:.79},{n:'TRAPPIST-1 e',P:6.1,Rp:.92},{n:'TRAPPIST-1 f',P:9.21,Rp:1.05},{n:'TRAPPIST-1 g',P:12.35,Rp:1.13},{n:'TRAPPIST-1 h',P:18.77,Rp:.76}],
-  intro:'A tiny, faint red star with LOTS going on. Dips of different depths mean different planets. Mark at least 6.',
+  intro:'A tiny, faint red star with LOTS going on. Dips of different depths mean different planets. Box at least 6.',
   fact:'TRAPPIST-1 has seven Earth-size planets, and three are in the zone where liquid water could exist. (They were found by other telescopes; this light curve is simulated.)'},
- {star:'TOI-700',Rs:.42,M:.42,sigma:.00035,span:54,answer:'planet',need:3,planets:[{n:'TOI-700 b',P:9.98,Rp:1.04},{n:'TOI-700 c',P:16.05,Rp:2.65},{n:'TOI-700 e',P:27.8,Rp:.95},{n:'TOI-700 d',P:37.42,Rp:1.19}],
+ {star:'TOI-700',Rs:.42,M:.42,sigma:.00035,extraGap:1,red:.5,span:54.8,answer:'planet',need:3,planets:[{n:'TOI-700 b',P:9.98,Rp:1.04},{n:'TOI-700 c',P:16.05,Rp:2.65},{n:'TOI-700 e',P:27.8,Rp:.95},{n:'TOI-700 d',P:37.42,Rp:1.19}],
   intro:'The final challenge: two months of TESS data. Somewhere in here is an Earth-size planet in the habitable zone.',
   fact:'TOI-700 d was the first Earth-size planet in a habitable zone found by TESS (2020). Volunteers and astronomers combed through light curves just like this one.'}
 ];
 const durDays=(P,Rs,M)=>13/24*Rs*Math.pow(P/365.25,1/3)*Math.pow(M,-1/3);
 let hunted=new Set(),HS=null;
+// Builds a TESS-like light curve: sectors of ~27.4 days, a data-downlink gap mid-sector,
+// ramps after gaps, momentum-dump glitches, slow red noise, star spots, flares, transits/eclipses.
 function genCurve(L,seed){
   const r=mulberry(seed);const g=()=>{let u=0,v=0;while(!u)u=r();while(!v)v=r();return Math.sqrt(-2*Math.log(u))*Math.cos(6.2832*v)};
-  const span=L.span||27,dt=1/48,t=[],f=[],ev=[];const gaps=[];for(let s=0;s<span;s+=27)gaps.push([s+12.9,s+14.1]);
+  const span=L.span||27.4,dt=1/48,t=[],f=[],ev=[],gaps=[],dumps=[],ramps=[];
+  for(let s=0;s<span-1;s+=27.4){const m=s+13.2+r()*.8;gaps.push([m,m+.9+r()*.5,'down']);if(s>0)gaps.push([s-.25,s+.35,'sector'])}
+  if(L.extraGap){const a=3+r()*(span-8);gaps.push([a,a+1.2+r()*.8,'lost'])}
   const inGap=x=>gaps.some(q=>x>q[0]&&x<q[1]);
-  const pl=L.planets.map((p,i)=>{const D=Math.max(durDays(p.P,L.Rs,L.M),.04),k=p.Rp*RE_RS/L.Rs;return Object.assign({},p,{i,D,dep:k*k,ing:D*k/(1+k),t0:.3+r()*Math.min(p.P,span*.5)})});
-  pl.forEach(p=>{for(let tc=p.t0;tc<span;tc+=p.P)if(!inGap(tc))ev.push({t:tc,D:p.D,pi:p.i})});
+  const gapEnds=gaps.map(q=>q[1]).concat([0]);
+  const pl=L.planets.map((p,i)=>{const D=Math.max(durDays(p.P,L.Rs,L.M),.03),k=p.Rp*RE_RS/L.Rs;return Object.assign({},p,{i,D,dep:k*k,ing:D*k/(1+k),t0:.4+r()*Math.min(p.P,span*.5)})});
+  const usable=tc=>!gaps.some(q=>tc+.05>q[0]-0.1&&tc-.05<q[1]+.1);
+  pl.forEach(p=>{for(let tc=p.t0;tc<span-.1;tc+=p.P)if(usable(tc))ev.push({t:tc,D:p.D,pi:p.i})});
   const eb=L.eb?Object.assign({t0:.6+r()*2},L.eb):null;
-  if(eb)for(let k=0,tc=eb.t0;tc<span;k++,tc=eb.t0+k*eb.P/2)if(!inGap(tc))ev.push({t:tc,D:eb.D,pi:-1});
+  if(eb)for(let k=0,tc=eb.t0;tc<span;k++,tc=eb.t0+k*eb.P/2)if(usable(tc))ev.push({t:tc,D:eb.D,pi:-1});
+  // spacecraft momentum dumps: short, sharp glitches every ~3 days
+  const dp=2.5+r()*.8;for(let x=1+r()*2;x<span;x+=dp)if(!inGap(x)&&!ev.some(e=>Math.abs(e.t-x)<e.D+.1))dumps.push(x);
+  const noiseA=L.sigma*(L.red==null?1.2:L.red),wav=[0,1,2].map(()=>[1.2+r()*5,r()*6.28,noiseA*(.4+r()*.6)]);
+  const rampA=Math.max(L.sigma*3,.0003);gapEnds.forEach(x=>ramps.push([x,(r()<.7?-1:1)*rampA*(.6+r()*.8)]));
   const fl=[];for(let i=0;i<(L.flares||0);i++)fl.push([r()*span,.004+r()*r()*.03]);
   const ph=r()*6.28;
   for(let x=0;x<span;x+=dt){if(inGap(x))continue;let y=1;
     for(const p of pl){let d=((x-p.t0)%p.P+p.P)%p.P;if(d>p.P/2)d-=p.P;const a=Math.abs(d);if(a<p.D/2){const e=p.D/2-a;y-=p.dep*(e<p.ing?e/p.ing:1)*(1.06-.12*Math.pow(a/(p.D/2),2))}}
     if(eb){const H2=eb.P/2;let d=((x-eb.t0)%H2+H2)%H2;let n=Math.round((x-eb.t0-d)/H2);if(d>H2/2){d-=H2;n++}const a=Math.abs(d);if(a<eb.D/2)y-=(n%2?eb.d2:eb.d1)*(1-a/(eb.D/2))}
     if(L.spots)y+=L.spots.A*Math.sin(6.2832*x/L.spots.P+ph);
+    for(const w of wav)y+=w[2]*Math.sin(6.2832*x/w[0]+w[1]);
+    for(const q of ramps){const s=x-q[0];if(s>=0&&s<1.2)y+=q[1]*Math.exp(-s/.16)}
     for(const q of fl){const s=x-q[0];if(s>=0&&s<.4)y+=q[1]*Math.exp(-s/.035)}
+    for(const q of dumps){const s=Math.abs(x-q);if(s<dt*.9)y-=L.sigma*(6+3*r())}
     t.push(x);f.push(y+g()*L.sigma)}
-  return{t,f,ev,pl,span}}
+  return{t,f,ev,pl,span,gaps,dumps,ramps:gapEnds}}
 function huntLoad(i){const L=HUNT[i];const c=genCurve(L,1000+i*77);
-  const s=c.f.slice().sort((a,b)=>a-b);const lo=s[Math.floor(s.length*.002)],hi=s[Math.floor(s.length*(L.flares?.985:.998))];const pad=(hi-lo)*.12;
-  HS={i,L,...c,marks:[],v0:0,v1:c.span,lo:lo-pad,hi:hi+pad,hint:null,done:hunted.has(L.star)};
-  $('hHead').innerHTML='<b style="font-size:16px">'+L.star+'</b> <span class="foot">· TESS-style light curve · '+c.span+' days · simulated from real measurements</span>';
-  $('hMsg').innerHTML='<p>'+L.intro+'</p><p class="foot">Tap a dip to mark it (tap again to remove). When you\'re done, pick an answer below.</p>'+zooLink();
+  const s=c.f.slice().sort((a,b)=>a-b);const lo=s[Math.floor(s.length*.003)],hi=s[Math.floor(s.length*(L.flares?.985:.997))];const pad=(hi-lo)*.12;
+  HS=Object.assign({i,L,marks:[],v0:0,v1:c.span,lo:lo-pad,hi:hi+pad,hint:null,drag:null},c);
+  $('hHead').innerHTML='<b style="font-size:16px">'+L.star+'</b> <span class="foot">· TESS-style light curve · '+fmtNum(c.span,0)+' days · simulated from real measurements</span>';
+  $('hMsg').innerHTML='<p>'+L.intro+'</p><p class="foot"><b>Drag across a dip</b> to draw a box around the whole dip, from where it starts to drop to where it comes back up. Tap a box to remove it. Slide the small strip below to move along the graph. Gray bands are times the satellite wasn\'t looking.</p>'+zooLink();
   buildHuntTabs();drawHunt()}
 const zooLink=()=>'<p style="margin-top:12px"><a class="btn sm" style="display:inline-block;text-decoration:none;color:var(--acc)" href="'+ZOO+'" target="_blank" rel="noopener">🔭 Hunt for real with scientists: Planet Hunters TESS ↗</a></p>';
 function buildHuntTabs(){const b=$('hLv');b.innerHTML='';HUNT.forEach((L,i)=>{const x=document.createElement('button');x.className='btn tab'+(HS&&HS.i===i?' on':'');x.textContent=(hunted.has(L.star)?'✓ ':'')+(i+1)+'. '+L.star.replace(' (made-up star)','');x.onclick=()=>huntLoad(i);b.appendChild(x)});
   const on=b.querySelector('.on');if(on)on.scrollIntoView({inline:'center',block:'nearest'})}
-const hcv=$('hcv'),hx=hcv.getContext('2d');
-function hW(){return hcv.clientWidth}
+const hcv=$('hcv'),hx=hcv.getContext('2d'),hov=$('hov'),ho=hov.getContext('2d');
+const hW=()=>hcv.clientWidth;
 const tX=t=>(t-HS.v0)/(HS.v1-HS.v0)*hW();
-function drawHunt(){if(!HS)return;const w=hcv.clientWidth,h=hcv.clientHeight,d=Math.min(devicePixelRatio||1,2);if(hcv.width!==Math.round(w*d)){hcv.width=Math.round(w*d);hcv.height=Math.round(h*d)}
-  hx.setTransform(d,0,0,d,0,0);hx.clearRect(0,0,w,h);const top=8,bot=h-20;const fy=v=>top+(HS.hi-v)/(HS.hi-HS.lo)*(bot-top);
-  // grid
+const xT=x=>HS.v0+x/hW()*(HS.v1-HS.v0);
+function fit(c){const w=c.clientWidth,h=c.clientHeight,d=Math.min(devicePixelRatio||1,2);if(c.width!==Math.round(w*d)||c.height!==Math.round(h*d)){c.width=Math.round(w*d);c.height=Math.round(h*d)}c.getContext('2d').setTransform(d,0,0,d,0,0);return[w,h]}
+const MCOL={good:'#6fe39a',part:'#ffd28a',bad:'#ff8a5a',wide:'#ffd28a',undefined:'#8fd0ff'};
+function drawCurve(c,w,h,v0,v1,top,bot,dots){const fy=v=>top+(HS.hi-v)/(HS.hi-HS.lo)*(bot-top),X=t=>(t-v0)/(v1-v0)*w;
+  c.fillStyle='rgba(150,150,170,.16)';for(const q of HS.gaps){const a=X(q[0]),b=X(q[1]);if(b>0&&a<w)c.fillRect(a,top,Math.max(2,b-a),bot-top)}
+  const T=HS.t,F=HS.f,n=T.length;
+  if(dots){const ds=(v1-v0)<4?2.6:1.6;c.fillStyle='rgba(120,190,255,.6)';for(let i=0;i<n;i++){if(T[i]<v0||T[i]>v1)continue;c.fillRect(X(T[i])-ds/2,fy(F[i])-ds/2,ds,ds)}}
+  const bw=dots?3:2;c.strokeStyle=dots?'rgba(255,255,255,.9)':'rgba(200,220,255,.8)';c.lineWidth=dots?1.4:1;c.beginPath();
+  let cb=-1,s=0,k=0,lt=-9,pen=false;const flush=()=>{if(!k)return;const y=fy(s/k),x=cb*bw+bw/2;pen?c.lineTo(x,y):c.moveTo(x,y);pen=true};
+  for(let i=0;i<n;i++){if(T[i]<v0-.1||T[i]>v1+.1)continue;const b=Math.floor(X(T[i])/bw);if(T[i]-lt>.09){flush();pen=false;cb=b;s=0;k=0}
+    if(b!==cb){flush();cb=b;s=0;k=0}s+=F[i];k++;lt=T[i]}flush();c.stroke();return fy}
+function drawHunt(){if(!HS)return;let [w,h]=fit(hcv);hx.clearRect(0,0,w,h);const top=8,bot=h-20;
   hx.font='10px -apple-system,system-ui';hx.fillStyle='#93a2c6';hx.strokeStyle='rgba(140,170,255,.13)';hx.lineWidth=1;
+  const fy=v=>top+(HS.hi-v)/(HS.hi-HS.lo)*(bot-top);
   const rng=HS.hi-HS.lo,st=[.0001,.0002,.0005,.001,.002,.005,.01,.02,.05,.1].find(s=>rng/s<6)||.2;
   for(let v=Math.ceil(HS.lo/st)*st;v<HS.hi;v+=st){const y=fy(v);hx.beginPath();hx.moveTo(0,y);hx.lineTo(w,y);hx.stroke();hx.fillText((v*100).toFixed(st<.001?2:st<.01?1:0)+'%',3,y-2)}
-  const ds=[.5,1,2,5,10].find(s=>(HS.v1-HS.v0)/s<8)||10;
-  for(let v=Math.ceil(HS.v0/ds)*ds;v<HS.v1;v+=ds){const x=tX(v);hx.beginPath();hx.moveTo(x,top);hx.lineTo(x,bot);hx.stroke();hx.fillText('day '+(+v.toFixed(1)),x+2,h-6)}
-  if(HS.hint!==null){const x=tX(HS.hint.t),ww=Math.max(14,tX(HS.hint.t+HS.hint.D)-x);hx.fillStyle='rgba(255,210,138,.18)';hx.fillRect(x-ww*.8,top,ww*1.6,bot-top)}
-  // points
-  const T=HS.t,F=HS.f,n=T.length;hx.fillStyle='rgba(120,190,255,.55)';
-  for(let i=0;i<n;i++){if(T[i]<HS.v0||T[i]>HS.v1)continue;hx.fillRect(tX(T[i])-.8,fy(F[i])-.8,1.6,1.6)}
-  // binned line
-  const bw=3,nb=Math.ceil(w/bw),sum=new Float64Array(nb),cnt=new Uint16Array(nb);
-  for(let i=0;i<n;i++){const x=tX(T[i]);if(x<0||x>=w)continue;const b=Math.floor(x/bw);sum[b]+=F[i];cnt[b]++}
-  hx.strokeStyle='rgba(255,255,255,.9)';hx.lineWidth=1.5;hx.beginPath();let pen=false;for(let b=0;b<nb;b++){if(!cnt[b]){pen=false;continue}const x=b*bw+bw/2,y=fy(sum[b]/cnt[b]);pen?hx.lineTo(x,y):hx.moveTo(x,y);pen=true}hx.stroke();
-  // marks
-  for(const m of HS.marks){const x=tX(m.t);if(x<-10||x>w+10)continue;const c=m.ok===false?'#ff8a5a':m.ok?'#6fe39a':'#ffd28a';hx.strokeStyle=c;hx.fillStyle=c;hx.setLineDash([3,3]);hx.beginPath();hx.moveTo(x,top+10);hx.lineTo(x,bot);hx.stroke();hx.setLineDash([]);hx.beginPath();hx.moveTo(x-6,top);hx.lineTo(x+6,top);hx.lineTo(x,top+10);hx.closePath();hx.fill()}
-}
-function nearEv(t){const tol=Math.max((HS.v1-HS.v0)/hW()*14,0);let best=null,bd=1e9;for(const e of HS.ev){const dd=Math.abs(e.t-t);if(dd<Math.max(e.D*.8,tol)&&dd<bd){bd=dd;best=e}}return best}
-// input: tap to mark, drag to pan, pinch to zoom
-{const P=new Map();let mv=0,p0=0,v00=0,v10=0;
-  hcv.addEventListener('pointerdown',e=>{hcv.setPointerCapture(e.pointerId);P.set(e.pointerId,{x:e.clientX});mv=0;if(P.size===2){const [a,b]=[...P.values()];p0=Math.abs(a.x-b.x);v00=HS.v0;v10=HS.v1}});
-  hcv.addEventListener('pointermove',e=>{const p=P.get(e.pointerId);if(!p||!HS)return;const dx=e.clientX-p.x;p.x=e.clientX;mv+=Math.abs(dx);
-    if(P.size===1){const s=(HS.v1-HS.v0)*dx/hW();huntPan(-s)}else if(P.size===2&&p0>0){const [a,b]=[...P.values()];const k=p0/Math.max(20,Math.abs(a.x-b.x));const c=(v00+v10)/2;huntView(c,(v10-v00)*k)}});
-  const up=e=>{const had=P.delete(e.pointerId);if(!had||!HS||mv>8||e.type!=='pointerup'||P.size)return;const rc=hcv.getBoundingClientRect();const t=HS.v0+(e.clientX-rc.left)/hW()*(HS.v1-HS.v0);
-    const ex=HS.marks.findIndex(m=>Math.abs(tX(m.t)-(e.clientX-rc.left))<12);if(ex>=0)HS.marks.splice(ex,1);else HS.marks.push({t});HS.marks.forEach(m=>m.ok=undefined);HS.hint=null;drawHunt()};
-  hcv.addEventListener('pointerup',up);hcv.addEventListener('pointercancel',up)}
-function huntView(c,span){span=clamp(span,.6,HS.span);HS.v0=clamp(c-span/2,0,HS.span-span);HS.v1=HS.v0+span;drawHunt()}
-function huntPan(s){const sp=HS.v1-HS.v0;HS.v0=clamp(HS.v0+s,0,HS.span-sp);HS.v1=HS.v0+sp;drawHunt()}
+  const ds=[.25,.5,1,2,5,10].find(s=>(HS.v1-HS.v0)/s<7)||10;
+  for(let v=Math.ceil(HS.v0/ds)*ds;v<HS.v1;v+=ds){const x=tX(v);hx.beginPath();hx.moveTo(x,top);hx.lineTo(x,bot);hx.stroke();hx.fillText('day '+(+v.toFixed(2)),x+2,h-6)}
+  if(HS.hint){const a=tX(HS.hint.t-HS.hint.D/2),b=tX(HS.hint.t+HS.hint.D/2);hx.fillStyle='rgba(255,210,138,.2)';hx.fillRect(a-6,top,b-a+12,bot-top)}
+  drawCurve(hx,w,h,HS.v0,HS.v1,top,bot,true);
+  hx.fillStyle='rgba(200,200,220,.55)';for(const q of HS.gaps){const a=tX(q[0]),b=tX(q[1]);if(b-a>40&&b>0&&a<w){hx.save();hx.textAlign='center';hx.fillText('no data',(a+b)/2,top+12);hx.restore()}}
+  const boxes=HS.drag?HS.marks.concat([HS.drag]):HS.marks;
+  for(const m of boxes){const a=tX(Math.min(m.a,m.b)),b=tX(Math.max(m.a,m.b));if(b<-5||a>w+5)continue;const c=MCOL[m.st];
+    hx.fillStyle=c+'2e';hx.strokeStyle=c;hx.lineWidth=1.5;hx.fillRect(a,top,b-a,bot-top);hx.strokeRect(a,top,b-a,bot-top)}
+  // overview strip
+  [w,h]=fit(hov);ho.clearRect(0,0,w,h);drawCurve(ho,w,h,0,HS.span,3,h-3,false);
+  for(const m of HS.marks){const a=m.a/HS.span*w,b=m.b/HS.span*w;ho.fillStyle=MCOL[m.st]+'aa';ho.fillRect(a,0,Math.max(2,b-a),h)}
+  const a=HS.v0/HS.span*w,b=HS.v1/HS.span*w;ho.strokeStyle='#6fd3ff';ho.lineWidth=2;ho.strokeRect(a+1,1,Math.max(4,b-a-2),h-2);ho.fillStyle='rgba(111,211,255,.1)';ho.fillRect(a,0,b-a,h)}
+// judge a box: must cover one whole dip, not be much wider than it
+function judge(m){const a=Math.min(m.a,m.b),b=Math.max(m.a,m.b),px=(HS.v1-HS.v0)/hW()*6;
+  const inside=HS.ev.filter(e=>e.t>a&&e.t<b);
+  if(inside.length>1)return{st:'wide',why:'One box covers '+inside.length+' dips. Draw one box per dip.'};
+  if(inside.length===1){const e=inside[0],sl=e.D*.2+px;
+    if(a>e.t-e.D/2+sl||b<e.t+e.D/2-sl)return{st:'part',e,why:'Almost! Stretch the box so it covers the whole dip, from the start of the drop to the recovery.'};
+    if(b-a>Math.max(e.D*5,.35)+px*2)return{st:'wide',e,why:'Your box is much wider than the dip. Make it snug around the dip.'};
+    return{st:'good',e}}
+  const near=HS.ev.find(e=>Math.abs(e.t-(a+b)/2)<e.D*1.5);if(near)return{st:'part',e:near,why:'Close! Center your box on the dip.'};
+  if(HS.dumps.some(x=>x>a-.05&&x<b+.05))return{st:'bad',why:'That sharp one-point drop is a spacecraft glitch: TESS fires thrusters to dump momentum every few days. Real transits last hours and have a smooth shape.'};
+  if(HS.ramps.some(x=>a<x+.9&&b>x-.05))return{st:'bad',why:'That\'s a ramp right after a data gap: the camera warming up or cooling down as TESS turns back on. Not a planet.'};
+  if(HS.gaps.some(q=>a<q[1]+.3&&b>q[0]-.3))return{st:'bad',why:'That\'s next to a gap where the satellite wasn\'t looking. Edges of gaps are tricky; transits are dips with data on both sides.'};
+  if(HS.L.flares)return{st:'bad',why:'Nothing there. Remember: flares spike UP, planets dip DOWN.'};
+  return{st:'bad',why:'No dip there. That\'s just noise: the star and the camera wiggle a little.'}}
+// input: drag = box, tap on box = remove, 2 fingers = zoom; overview strip = move
+{const P=new Map();let x0=0,mv=0,p0=0,v00=0,v10=0;
+  hcv.addEventListener('pointerdown',e=>{if(!HS)return;hcv.setPointerCapture(e.pointerId);const rc=hcv.getBoundingClientRect();P.set(e.pointerId,{x:e.clientX-rc.left});
+    if(P.size===1){x0=e.clientX-rc.left;mv=0;HS.drag=null}else if(P.size===2){HS.drag=null;const [a,b]=[...P.values()];p0=Math.abs(a.x-b.x);v00=HS.v0;v10=HS.v1;drawHunt()}});
+  hcv.addEventListener('pointermove',e=>{const p=P.get(e.pointerId);if(!p||!HS)return;const rc=hcv.getBoundingClientRect();p.x=e.clientX-rc.left;
+    if(P.size===1){mv=Math.abs(p.x-x0);if(mv>6){HS.drag={a:xT(x0),b:xT(p.x)};drawHunt()}}
+    else if(P.size===2&&p0>0){const [a,b]=[...P.values()];const k=p0/Math.max(20,Math.abs(a.x-b.x));huntView((v00+v10)/2,(v10-v00)*k)}});
+  const up=e=>{const had=P.delete(e.pointerId);if(!had||!HS)return;
+    if(HS.drag&&P.size===0&&e.type==='pointerup'){const m=HS.drag;HS.drag=null;const a=Math.min(m.a,m.b),b=Math.max(m.a,m.b);if(b-a>1e-4){HS.marks.push({a,b});HS.marks.forEach(q=>q.st=undefined)}HS.hint=null;drawHunt();return}
+    HS.drag=null;
+    if(mv<=6&&P.size===0&&e.type==='pointerup'){const rc=hcv.getBoundingClientRect(),t=xT(e.clientX-rc.left);const i=HS.marks.findIndex(m=>t>=m.a-(HS.v1-HS.v0)*.02&&t<=m.b+(HS.v1-HS.v0)*.02);if(i>=0)HS.marks.splice(i,1);drawHunt()}};
+  hcv.addEventListener('pointerup',up);hcv.addEventListener('pointercancel',up);
+  const ovMove=e=>{const rc=hov.getBoundingClientRect();huntView((e.clientX-rc.left)/rc.width*HS.span,HS.v1-HS.v0)};
+  let ovOn=false;hov.addEventListener('pointerdown',e=>{if(!HS)return;hov.setPointerCapture(e.pointerId);ovOn=true;ovMove(e)});
+  hov.addEventListener('pointermove',e=>{if(ovOn)ovMove(e)});['pointerup','pointercancel'].forEach(n=>hov.addEventListener(n,()=>{ovOn=false}))}
+function huntView(c,span){span=clamp(span,.4,HS.span);HS.v0=clamp(c-span/2,0,HS.span-span);HS.v1=HS.v0+span;drawHunt()}
 $('hZi').onclick=()=>huntView((HS.v0+HS.v1)/2,(HS.v1-HS.v0)/2);
 $('hZo').onclick=()=>huntView((HS.v0+HS.v1)/2,(HS.v1-HS.v0)*2);
 $('hAll').onclick=()=>huntView(HS.span/2,HS.span);
 $('hClr').onclick=()=>{HS.marks=[];drawHunt()};
-$('hHint').onclick=()=>{const un=HS.ev.filter(e=>!HS.marks.some(m=>nearEv(m.t)===e));
-  if(!HS.ev.length){$('hMsg').innerHTML='<p>💡 Hint: look for dips that go clearly below the wiggly line and come back again later, again and again. Do you see any?</p>'+zooLink();return}
-  const e=un.sort((a,b)=>HS.planets_dep?0:0)[Math.floor(Math.random()*un.length)]||HS.ev[0];HS.hint=e;const sp=Math.min(HS.v1-HS.v0,Math.max(2,e.D*25));huntView(e.t,sp)};
+$('hKey').onclick=()=>{$('hMsg').innerHTML='<p><b>What\'s in the graph?</b></p><p>📉 <b>Transit:</b> a smooth dip lasting hours (minutes for tiny stars), the same depth every time it repeats. That\'s a planet!</p><p>▒ <b>Gray bands:</b> no data. Every 13.7 days TESS points its antenna at Earth to send pictures home.</p><p>↘ <b>Ramps:</b> the brightness drifts right after a gap while the cameras settle. Ignore them.</p><p>⚡ <b>Glitches:</b> a single sharp point dropping down. TESS fires small thrusters every few days to stay steady.</p><p>〰 <b>Wiggles:</b> starspots rotating into view, and noise from the camera.</p><p>✨ <b>Flares:</b> sudden spikes UP from an active star.</p><p>⭐⭐ <b>Eclipsing binary:</b> two stars blocking each other: very deep dips, often alternating deep and shallow.</p>'+zooLink()};
+$('hHint').onclick=()=>{const un=HS.ev.filter(e=>!HS.marks.some(m=>judge(m).e===e&&judge(m).st==='good'));
+  if(!HS.ev.length){$('hMsg').innerHTML='<p>💡 Hint: look for smooth dips that drop below the wiggles, last a while, and come back later at the same depth. Do you see any? Ignore gaps, ramps and single-point glitches.</p>'+zooLink();return}
+  const e=un[Math.floor(Math.random()*un.length)]||HS.ev[0];HS.hint=e;huntView(e.t,Math.min(HS.v1-HS.v0,Math.max(1.2,e.D*14)))};
 document.querySelectorAll('.hans .btn').forEach(b=>b.onclick=()=>huntAnswer(b.dataset.a));
-function huntAnswer(a){const L=HS.L,hit=new Set();
-  HS.marks.forEach(m=>{const e=nearEv(m.t);m.ok=!!e;if(e)hit.add(e)});drawHunt();
-  const say2=(t)=>{$('hMsg').innerHTML=t+zooLink();$('hMsg').scrollTop=0};
+function huntAnswer(a){const L=HS.L,hit=new Set(),notes=[];
+  HS.marks.forEach(m=>{const j=judge(m);m.st=j.st;if(j.st==='good')hit.add(j.e);else if(j.why&&!notes.includes(j.why))notes.push(j.why)});drawHunt();
+  const fb=notes.length?'<p class="foot">About your '+(notes.length>1?'orange/red boxes':'orange/red box')+':</p>'+notes.map(n=>'<p>• '+n+'</p>').join(''):'';
+  const say2=t=>{$('hMsg').innerHTML=t+fb+zooLink();$('hMsg').scrollTop=0};
   if(a!==L.answer){
-    let t='';if(L.answer==='eb'&&a==='planet')t='Not quite! Look at how DEEP those dips are: the star loses about a third of its light. A planet blocks only a tiny bit (even Jupiter blocks about 1% of a Sun-like star). And notice every other dip is shallower…';
-    else if(L.answer==='none')t='Hmm, check again. Real transits repeat at the same depth, again and again. Here the wiggles are just noise and starspots.';
-    else if(a==='none')t='There ARE dips hiding in there! Try zooming in with + and sliding along. Or press 💡 Hint.';
+    let t='';if(L.answer==='eb'&&a==='planet')t='Not quite! Look how DEEP those dips are: the star loses about a third of its light. A planet blocks only a little (even Jupiter blocks about 1% of a Sun-like star). And notice every other dip is shallower…';
+    else if(L.answer==='none')t='Check again. Real transits are smooth dips that repeat at the same depth. Here it\'s only wiggles, ramps after gaps and glitches.';
+    else if(a==='none')t='There ARE dips hiding in there! Zoom in with + and slide along the strip. Or press 💡 Hint.';
     else if(a==='eb')t='Good thinking to check for two stars, but these dips are shallow and all the same shape. Two stars would block much more light.';
     else t='Not quite. Look again: are the dips the same depth each time?';
     say2('<p>🤔 '+t+'</p>');return}
-  if(L.answer!=='none'){const need=Math.min(L.need||3,HS.ev.length);if(hit.size<need){say2('<p>✅ Right idea! Now mark at least <b>'+need+'</b> dips so we can measure them. You have <b>'+hit.size+'</b> correct'+(HS.marks.length>hit.size?' (orange marks aren\'t on a dip)':'')+'.</p>');return}}
-  // success
+  if(L.answer!=='none'){const need=Math.min(L.need||3,HS.ev.length);if(hit.size<need){say2('<p>✅ Right idea! Now box at least <b>'+need+'</b> whole dips. Green boxes are good: you have <b>'+hit.size+'</b>.</p>');return}}
   const first=!hunted.has(L.star);hunted.add(L.star);save();buildHuntTabs();
   let h='<h3 style="margin:4px 0">🎉 '+(L.answer==='planet'?'Planet'+(HS.pl.length>1?'s':'')+' found!':L.answer==='eb'?'Correct: two stars!':'Correct: no planets here.')+'</h3>';
   if(L.answer==='planet'){const found=new Set([...hit].map(e=>e.pi));
-    h+='<table><tr><th style="text-align:left">Planet</th><th>Year</th><th>Dip</th><th>Size</th></tr>'+HS.pl.map(p=>'<tr><td style="text-align:left">'+(found.has(p.i)?'✓ ':'')+p.n+'</td><td>'+(p.P<2?fmtNum(p.P*24,1)+' h':fmtNum(p.P,1)+' d')+'</td><td>'+(p.dep*100).toFixed(p.dep<.001?3:2)+'%</td><td>'+fmtNum(p.Rp,2)+'× Earth</td></tr>').join('')+'</table>'+
-      '<p class="foot">How it works: the time between dips is the planet\'s year. The dip\'s depth tells its size: planet width ÷ star width = √(depth). A bigger planet blocks more light.</p>';
-    const big=Math.max(...HS.pl.map(p=>p.Rp));h+='<p>'+(big>8?'That\'s a giant planet, bigger than Jupiter-size (11× Earth).':big>2.5?'Bigger than Earth, closer to Neptune-size (3.9× Earth).':'These are rocky, Earth-size worlds!')+'</p>'}
+    h+='<table><tr><th style="text-align:left">Planet</th><th>Year</th><th>Dip</th><th>Lasts</th><th>Size</th></tr>'+HS.pl.map(p=>'<tr><td style="text-align:left">'+(found.has(p.i)?'✓ ':'')+p.n+'</td><td>'+(p.P<2?fmtNum(p.P*24,1)+' h':fmtNum(p.P,1)+' d')+'</td><td>'+(p.dep*100).toFixed(p.dep<.001?3:2)+'%</td><td>'+fmtNum(p.D*24,1)+' h</td><td>'+fmtNum(p.Rp,2)+'× Earth</td></tr>').join('')+'</table>'+
+      '<p class="foot">✓ = you boxed it. The time between dips is the planet\'s year. The depth tells its size: planet width ÷ star width = √(depth). How long a dip lasts depends on how fast the planet moves across the star.</p>';
+    const big=Math.max(...HS.pl.map(p=>p.Rp));h+='<p>'+(big>8?'That\'s a giant planet, bigger than Jupiter (11× Earth).':big>2.5?'Bigger than Earth, closer to Neptune-size (3.9× Earth).':'These are rocky, Earth-size worlds!')+'</p>'}
   h+='<p>'+L.fact+'</p><div style="display:flex;gap:8px;flex-wrap:wrap">';
   if(byName[L.star])h+='<button class="btn go" id="hVisit">Visit '+L.star+' ▸</button>';
   if(HS.i<HUNT.length-1)h+='<button class="btn" id="hNext">Next star ▸</button>';
