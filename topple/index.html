@@ -130,6 +130,24 @@ canvas{position:absolute;inset:0;display:block;width:100%;height:100%;touch-acti
 .chk .y{color:var(--ok)}.chk .n{color:#776c95}
 #flash{position:absolute;inset:0;pointer-events:none;background:#fff;opacity:0;transition:opacity .5s}
 #ver{color:rgba(255,255,255,.4);font-size:11px;letter-spacing:.08em;margin-top:2px}
+
+#opts.col{flex-direction:column;align-items:stretch;gap:6px;padding:6px 8px}
+.tabs{display:flex;gap:6px;align-items:center;min-width:0;overflow-x:auto;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{appearance:none;border:1px solid var(--line);background:rgba(255,255,255,.06);color:var(--mut);font:inherit;font-size:12px;font-weight:800;padding:5px 11px;border-radius:999px;white-space:nowrap;cursor:pointer;touch-action:manipulation}
+.tab.on{background:var(--acc);color:#2a0f1c;border-color:transparent}
+.sp{flex:1}
+.hintsm{font-size:11px;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pendhd{display:flex;gap:10px;align-items:baseline;font-size:13px;min-width:0;white-space:nowrap;overflow:hidden}
+.pendhd .muted{font-size:12px;overflow:hidden;text-overflow:ellipsis}
+.badtxt{color:var(--bad);font-weight:800}
+.pendbar{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.pendbar .btn.sq{width:40px;height:40px}
+.pendbar .btn.acc{min-width:96px;height:44px}
+.emo{display:grid;grid-template-columns:repeat(auto-fill,minmax(44px,1fr));gap:6px;margin-top:10px}
+.emo button{font-size:26px;height:46px;border-radius:12px;border:1px solid var(--line);background:rgba(255,255,255,.05);cursor:pointer}
+.emo button.sel{border-color:var(--acc);background:rgba(255,179,71,.2)}
+.pkin{width:100%;height:46px;border-radius:12px;border:1px solid var(--line);background:rgba(255,255,255,.08);color:var(--tx);font:inherit;font-size:20px;font-weight:800;padding:0 12px;margin-top:10px;letter-spacing:.08em}
 </style>
 </head>
 <body>
@@ -145,7 +163,7 @@ canvas{position:absolute;inset:0;display:block;width:100%;height:100%;touch-acti
     <div class="mrow"><button class="btn" id="bUnlock">Unlocks</button><button class="btn" id="bHelp">How to play</button></div>
     <div id="pts"></div>
     <div class="bar"><i id="ptsBar"></i></div>
-    <div id="ver">Topple v0.2.1</div>
+    <div id="ver">Topple v0.3.0</div>
   </div>
 
   <div id="hudBuild" class="hide">
@@ -192,6 +210,6 @@ canvas{position:absolute;inset:0;display:block;width:100%;height:100%;touch-acti
 </div>
 <script src="lib/three.min.js"></script>
 <script src="lib/rapier.js"></script>
-<script src="game.js?v=0.2.1"></script>
+<script src="game.js?v=0.3.0"></script>
 </body>
 </html>
