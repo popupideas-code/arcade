@@ -1,5 +1,13 @@
 [
   {
+    "id": "topple",
+    "title": "Topple",
+    "tagline": "Draw or stamp domino runs, hit play, and ride a 3D camera down the chain. Don't leave stragglers. New daily build every day.",
+    "path": "topple/",
+    "added": "2026-11-25",
+    "thumb": "topple/thumb.png"
+  },
+  {
     "id": "color-clash-centipede",
     "title": "Color Clash Centipede",
     "tagline": "Bubble shooter meets Centipede. Match eggs, shoot the head, dodge the poop, beat the boss.",
