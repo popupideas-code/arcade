@@ -129,6 +129,7 @@ canvas{position:absolute;inset:0;display:block;width:100%;height:100%;touch-acti
 .chk{display:grid;grid-template-columns:auto 1fr;gap:3px 8px;text-align:left;margin:6px 8px 10px;font-size:14px}
 .chk .y{color:var(--ok)}.chk .n{color:#776c95}
 #flash{position:absolute;inset:0;pointer-events:none;background:#fff;opacity:0;transition:opacity .5s}
+#ver{color:rgba(255,255,255,.4);font-size:11px;letter-spacing:.08em;margin-top:2px}
 </style>
 </head>
 <body>
@@ -144,6 +145,7 @@ canvas{position:absolute;inset:0;display:block;width:100%;height:100%;touch-acti
     <div class="mrow"><button class="btn" id="bUnlock">Unlocks</button><button class="btn" id="bHelp">How to play</button></div>
     <div id="pts"></div>
     <div class="bar"><i id="ptsBar"></i></div>
+    <div id="ver">Topple v0.2.0 · worlds update</div>
   </div>
 
   <div id="hudBuild" class="hide">
@@ -190,6 +192,6 @@ canvas{position:absolute;inset:0;display:block;width:100%;height:100%;touch-acti
 </div>
 <script src="lib/three.min.js"></script>
 <script src="lib/rapier.js"></script>
-<script src="game.js"></script>
+<script src="game.js?v=0.2.0"></script>
 </body>
 </html>
