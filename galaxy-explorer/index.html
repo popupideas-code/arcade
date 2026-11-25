@@ -187,8 +187,8 @@ body.travel #tabbar{opacity:.35;pointer-events:none}
     <h2 style="font-size:24px;margin:10px 0 6px">Welcome, explorer! 🚀</h2>
     <p>You're parked at our Sun. Every bright star you see is real and sits where astronomers measured it.</p>
     <h3>1 · Pick a place</h3><p>Tap a star, a glowing nebula, a black hole, or a ◇ sci-fi world. Or open <b>📍 Places</b> at the bottom.</p>
-    <h3>2 · Pick a ship</h3><p>Each ship uses a different way to cross space: real light sails and rockets, theoretical warp drives and wormholes, or pure sci-fi jumps. Open <b>🚀 Ship</b> at the bottom to read how each one works.</p>
-    <h3>3 · Watch the two clocks</h3><p><b style="color:#9fe6ff">τ</b> is <i>your</i> clock. <b style="color:#ffd28a">t</b> is Earth's clock. Fly close to light speed and Earth's clock races ahead of yours: that's Einstein's time dilation.</p>
+    <h3>2 · Pick a ship</h3><p>Every ship flies close to the speed of light, each with a different engine: light sails, antimatter, fusion, even a tiny black hole. <b>🚀 Ship</b> at the bottom to read how each one works.</p>
+    <h3>3 · Watch the two clocks</h3><p><b style="color:#9fe6ff">τ</b> is <i>your</i> clock. <b style="color:#ffd28a">t</b> is Earth's clock. At 99% of light speed, Earth's clock races 7 times faster than yours: that's Einstein's time dilation.</p>
     <h3>4 · Hunt for planets</h3><p>In <b>🪐 Hunt</b>, find planets the way TESS does: spot the tiny dips in a star's light when a planet passes in front.</p>
     <h3>5 · Explore</h3><p>When you arrive, press <b>Enter system</b> to fly around the planets in 3D. Tap <b>🌌</b> (top right) to see where you are in the Milky Way.</p>
     <p style="margin-top:16px"><button class="btn go" id="bStart" style="width:100%">Let's go!</button></p>
@@ -524,32 +524,39 @@ function drawGL(fx_){
 /* ---------- ships & drives ---------- */
 const G_LYYR2=1.0323; // 1 g in light-years per year²
 const DRIVES={
-  sail:{ship:'Starwisp',drive:'Laser light sail',tag:'real',tagT:'Real research',verb:'Set sail',kind:'sub',opts:[[.01,'0.01 c'],[.05,'0.05 c'],[.2,'0.2 c']],def:2,
-    how:'Giant lasers on Earth shine on a sail thinner than a soap bubble. Light pushes on things, a tiny bit, so the sail speeds up to a fifth of light speed carrying a chip the size of a stamp.',
-    catch:"It can't stop when it gets there. It zooms past and beams back pictures.",clocks:'Barely any time dilation: at 0.2 c Earth\'s clock runs only 2% faster than yours.',seen:'Breakthrough Starshot (a real project studying a trip to Alpha Centauri).'},
-  rocket:{ship:'Prometheus',drive:'Antimatter photon rocket',tag:'th',tagT:'Real physics · future tech',verb:'Launch',kind:'sub',opts:[[.5,'0.5 c'],[.9,'0.9 c'],[.99,'0.99 c'],[.999,'0.999 c'],[.99999,'0.99999 c']],def:2,
-    how:'When matter touches antimatter, both turn completely into energy. A giant mirror throws that light out the back. This is the best rocket physics allows, and can get very close to light speed.',
-    catch:'All the antimatter ever made on Earth would not light a light bulb for long. You\'d need tons of it.',clocks:'Near light speed your clock slows down a lot. At 0.99 c, Earth ages 7 years for every 1 of yours.',seen:"Avatar's ISV Venture Star, and Star Trek's warp cores run on matter-antimatter."},
-  torch:{ship:'Kepler',drive:'Fusion torch (constant thrust)',tag:'th',tagT:'Real physics · future tech',verb:'Burn',kind:'torch',opts:[[1,'1 g thrust'],[3,'3 g thrust'],[10,'10 g thrust']],def:0,
-    how:'A fusion engine burns the whole way. Speed up for half the trip, flip around, and slow down for the other half. At 1 g you feel normal Earth gravity the entire time.',
-    catch:'It needs a fusion engine far better than anything built, and enormous amounts of fuel.',clocks:'The longer you burn, the closer to light speed you get. At 1 g, you could reach the Andromeda Galaxy in about 28 years of your time, while 2.5 million years pass on Earth!',seen:"The Expanse's Epstein drive; the novel Tau Zero."},
-  warp:{ship:'Aurora',drive:'Alcubierre warp drive',tag:'th',tagT:'Theory · needs exotic matter',verb:'Engage warp',kind:'warp',opts:[[10,'10 c'],[1000,'1,000 c'],[1e5,'100,000 c'],[1e7,'10 million c'],[1e9,'1 billion c']],def:1,
-    how:'In 1994 physicist Miguel Alcubierre showed Einstein\'s equations allow a "warp bubble": squeeze space in front of the ship and stretch it out behind. The ship sits still in a bubble of calm space while space itself carries it, like a surfer on a wave. Space has no speed limit, so the bubble can go faster than light.',
-    catch:'It needs "negative energy" (exotic matter), which has never been found in useful amounts. Nobody knows how to steer or stop the bubble either.',clocks:'Inside the bubble you are not moving through space, so there is no time dilation: your clock and Earth\'s tick together.',seen:'Star Trek (warp drive), Star Trek: Enterprise, and many others.'},
-  worm:{ship:'Ouroboros',drive:'Wormhole (Einstein–Rosen bridge)',tag:'th',tagT:'Theory · needs exotic matter',verb:'Open wormhole',kind:'worm',opts:[[0,'Through the tunnel']],def:0,
-    how:'In 1935 Einstein and Nathan Rosen found that gravity can make a "bridge" between two far-apart places. A wormhole is a shortcut tunnel: a few hundred kilometers inside might connect places light-years apart.',
-    catch:'A natural Einstein–Rosen bridge pinches shut faster than light could cross it. Kip Thorne showed in 1988 that exotic matter could hold one open. Also, someone first has to haul the far end of the tunnel to your destination slower than light. (We pretend that\'s done.)',clocks:'The tunnel is short, so the trip takes minutes for you and for Earth.',seen:'Interstellar, Stargate, Contact, Star Trek: Deep Space Nine.'},
-  kras:{ship:'Weaver',drive:'Krasnikov tube',tag:'th',tagT:'Theory · needs exotic matter',verb:'Lay tube',kind:'kras',opts:[[.99,'0.99 c']],def:0,
-    how:'In 1995 Sergei Krasnikov imagined a ship that, on its first trip, flies slower than light but bends space behind it into a tube. Later, riding that tube back home is so fast that you arrive just after you first left!',
-    catch:'It needs exotic matter too. And it lets you get home before you could have heard from yourself, which breaks the order of cause and effect. Many physicists think that means nature forbids it.',clocks:'Try it: fly somewhere with Weaver, then fly straight back with Weaver. Watch the Earth clock run backward to just after you left.',seen:'Mostly physics papers. It inspired ideas in hard sci-fi.'},
-  hyper:{ship:'Hyperion',drive:'Hyperspace',tag:'sf',tagT:'Science fiction',verb:'Jump to hyperspace',kind:'warp',hyper:1,opts:[[1e4,'10,000 c'],[1e6,'1 million c'],[1e8,'100 million c']],def:1,
-    how:'Slip out of normal space into another dimension where distances are shorter or the speed limit is different, then drop back out near your destination.',
-    catch:"There's no evidence such a dimension exists. It's a storyteller's tool.",clocks:'Stories usually show no time dilation, so the clocks stay together.',seen:'Star Wars, Babylon 5, Asimov\'s Foundation.'},
-  jump:{ship:'Tessera',drive:'Jump drive / space folding',tag:'sf',tagT:'Science fiction',verb:'Jump',kind:'jump',opts:[[0,'Instant jump']],def:0,
-    how:'Fold space so two places touch, step across, and unfold. You vanish here and appear there in a flash.',
-    catch:'Pure fiction. An instant jump would let you break cause and effect, just like the Krasnikov tube.',clocks:'No time passes on either clock.',seen:'Battlestar Galactica (FTL jumps), Dune (the Guild folding space), The Hitchhiker\'s Guide (the Infinite Improbability Drive!).'}
+  sail:{ship:'Starwisp',drive:'Laser light sail',tag:'real',tagT:'Real research',verb:'Set sail',kind:'sub',
+    how:'Giant lasers on Earth shine on a sail thinner than a soap bubble. Light pushes on things a tiny bit, so the sail keeps speeding up.',
+    catch:'Real plans (Breakthrough Starshot) reach about 20% of light speed with a chip the size of a stamp. Pushing a crewed ship to 99% would need lasers far more powerful than all the power plants on Earth. And it can\'t stop: the lasers only push one way.',seen:'Breakthrough Starshot, a real project studying a trip to Alpha Centauri.'},
+  rocket:{ship:'Prometheus',drive:'Antimatter photon rocket',tag:'th',tagT:'Real physics · future tech',verb:'Launch',kind:'sub',
+    how:'When matter touches antimatter, both turn completely into energy. A giant mirror throws that light out the back. It\'s the most powerful rocket physics allows.',
+    catch:'All the antimatter ever made on Earth wouldn\'t light a light bulb for long. Reaching 99% of light speed and stopping again would need tons of it.',seen:"Avatar's ISV Venture Star; Star Trek's warp cores run on matter-antimatter."},
+  torch:{ship:'Kepler',drive:'Fusion torch',tag:'th',tagT:'Real physics · future tech',verb:'Burn',kind:'sub',
+    how:'A fusion engine squeezes hydrogen together like the Sun does and blasts the energy out the back, thrusting for the whole trip.',
+    catch:'Fusion rockets top out around 10–20% of light speed because they carry so much fuel. Reaching 99% would need an impossible amount.',seen:"The Expanse's Epstein drive; the novel Tau Zero."},
+  hyper:{ship:'Hyperion',drive:'Nuclear pulse (Project Orion)',tag:'real',tagT:'Real 1960s design',verb:'Launch',kind:'sub',
+    how:'Drop small nuclear bombs out the back one after another. Each blast pushes on a giant steel "pusher plate" with shock absorbers. Scientists really designed this in the 1950s and 60s.',
+    catch:'The best designs reach maybe 10% of light speed. A treaty in 1963 banned nuclear explosions in space, which ended the project.',seen:'Project Orion (real); the novel Footfall.'},
+  worm:{ship:'Ouroboros',drive:'Bussard ramjet',tag:'th',tagT:'Theory',verb:'Launch',kind:'sub',
+    how:'A huge magnetic "scoop" in front collects the thin hydrogen gas floating between stars and uses it as fusion fuel, so the ship never runs out.',
+    catch:'Space is so empty that the scoop would need to be thousands of kilometers wide, and it might slow you down more than it pushes.',seen:'Tau Zero, Larry Niven\'s Known Space stories, Star Trek\'s glowing "Bussard collectors".'},
+  warp:{ship:'Aurora',drive:'Ion drive',tag:'real',tagT:'Real · used today',verb:'Launch',kind:'sub',
+    how:'Electricity shoots charged atoms (ions) out the back very fast. It pushes very gently but never stops. NASA\'s Dawn spacecraft used one to visit Vesta and Ceres.',
+    catch:'The push is about as strong as the weight of a sheet of paper. Reaching 99% of light speed would take longer than the age of the universe!',seen:'Real spacecraft like Dawn, Deep Space 1 and Psyche; Star Wars TIE fighters ("Twin Ion Engines").'},
+  kras:{ship:'Weaver',drive:'Plasma magnet sail',tag:'th',tagT:'Theory',verb:'Launch',kind:'sub',
+    how:'A giant invisible magnetic bubble catches charged particles. It can ride a powerful particle beam fired from home, and on arrival it uses the gas between stars as a brake.',
+    catch:'It\'s great for slowing down, but pushing all the way to 99% of light speed would need an unbelievably strong beam.',seen:'Real NASA studies; the novel The Songs of Distant Earth (magnetic braking).'},
+  jump:{ship:'Tessera',drive:'Black hole drive (Kugelblitz)',tag:'th',tagT:'Theory',verb:'Launch',kind:'sub',
+    how:'Focus enough light into one tiny spot and it can make a black hole smaller than an atom. Tiny black holes glow fiercely (Hawking radiation). Catch that glow with a mirror and it pushes the ship.',
+    catch:'Nobody knows how to make or hold a tiny black hole. It would also evaporate in just a few years.',seen:'Physics papers; the game Mass Effect and many hard sci-fi stories.'}
 };
-const DKEYS=Object.keys(DRIVES);
+const DKEYS=['sail','rocket','torch','hyper','worm','warp','kras','jump'];
+const SPEEDS=[[.5,'50% of light'],[.9,'90% of light'],[.99,'99% of light'],[.999,'99.9% of light'],[.9999,'99.99% of light'],[.99999,'99.999% of light']];
+const SPD_DEF=2;
+// friendly time: "4.29 years", "7.3 months (221 days)", "18 days", "5 hours"
+function fmtHuman(y){if(y<0)return'−'+fmtHuman(-y);const d=y*365.25;
+  if(d<1/24)return Math.max(1,Math.round(d*1440))+' min';if(d<1)return fmtNum(d*24,1)+' hours';if(d<60)return fmtNum(d,d<10?1:0)+' days';
+  if(y<1)return fmtNum(y*12,1)+' months ('+Math.round(d)+' days)';if(y<100)return fmtNum(y,2)+' years';if(y<1e6)return fmtNum(y,0)+' years';return fmtBig(y)+' years'}
+
 // ---- ship art (rear view; original designs) ----
 function rg(c,x,y,r,col,a){const g=c.createRadialGradient(x,y,0,x,y,r);g.addColorStop(0,'rgba(255,255,255,'+a+')');g.addColorStop(.22,'rgba('+col+','+a*.8+')');g.addColorStop(1,'rgba('+col+',0)');c.fillStyle=g;c.beginPath();c.arc(x,y,r,0,6.2832);c.fill()}
 function metal(c,x0,x1,a,b){const g=c.createLinearGradient(x0,0,x1,0);g.addColorStop(0,a||'#3a4258');g.addColorStop(.45,b||'#c9d2e6');g.addColorStop(1,a||'#3a4258');return g}
@@ -780,7 +787,7 @@ function hudIdle(){
   hLoc.textContent=locName(curLoc);$('hMini').innerHTML='<span class="tau">τ +'+fmtTime(clock.S)+'</span> · <span class="te">t +'+fmtTime(clock.E)+'</span> · '+earthDate(clock.E);hDate.textContent=earthDate(clock.E);hSpd.textContent='0';hRem.textContent='—';
   if(last){hSub.textContent='Last trip · '+fmtLy(last.d)+' · '+DRIVES[last.drive].ship;hShip.textContent='+'+fmtTime(last.ship);hEarth.textContent=(last.earth<0?'':'+')+fmtTime(last.earth);
     const r=last.ship>0?last.earth/last.ship:1;setGam(r);
-    hGam.textContent=last.earth<0?'Earth clock went BACK: you got home before you left!':(last.ship<=0?'No time passed on either clock.':(r>1.01?'Earth aged '+fmtNum(r,r<10?2:0)+'× more than you':'Both clocks agree: no time dilation'))}
+    hGam.textContent='Earth aged '+fmtHuman(last.earth)+', you aged '+fmtHuman(last.ship)}
   else{hSub.textContent='Parked · pick a destination';hShip.textContent='—';hEarth.textContent='—';hGam.textContent='Voyage so far: you +'+fmtTime(clock.S)+', Earth +'+fmtTime(clock.E);setGam(1)}
 }
 function tagFor(o){if(o.kind==='fic')return'<span class="tag">'+o.series+'</span>';if(o.bh)return'<span class="tag bh">Black hole</span>';
@@ -797,7 +804,7 @@ function renderCard(){
   else sub=TYPE[o.cls];
   let mid='';
   if(!here){const P=makePlan(o,true);const D=DRIVES[drive];
-    if(P)mid='<div class="trip">Trip time: <span class="tau">you '+fmtTime(P.ship)+'</span> · <span class="te">Earth '+(P.earth<0?'goes BACK '+fmtTime(-P.earth)+'!':fmtTime(P.earth))+'</span><small>🚀 '+D.ship+' · '+D.drive+' · '+optLabel()+' · <a id="bChg">change</a></small></div>'}
+    if(P){const g=P.earth/P.ship;mid='<div class="trip">🌍 <span class="te">On Earth: <b>'+fmtHuman(P.earth)+'</b> pass</span><br>🧑‍🚀 <span class="tau">For you: only <b>'+fmtHuman(P.ship)+'</b></span>'+(P.ship>80?' <span style="color:#ff9a7a">· longer than a lifetime!</span>':'')+'<small>Earth ages '+fmtNum(g,g<10?1:0)+'× faster · 🚀 '+D.ship+' at '+optLabel()+' · <a id="bChg">change</a></small></div>'}}
   else{const lb=lookBack(o);if(lb)mid='<div class="f">🔭 '+lb+'</div>'}
   const onTour=tour&&here&&tour.list[tour.i]===o.name,nx=onTour?tour.list[tour.i+1]:null;
   let btns='';
@@ -817,7 +824,7 @@ function renderCard(){
   const bh=$('bHunt');if(bh)bh.onclick=()=>openHunt(o.name);
   const bn=$('bNext');if(bn)bn.onclick=()=>{tour.i++;const n2=tour.list[tour.i];if(!n2){tour=null;say('🏁 Tour complete! Great exploring.');renderCard();return}select(byName[n2],true)};
 }
-function optLabel(){const o=DRIVES[drive].opts.find(x=>x[0]===speed);return o?o[1]:''}
+function optLabel(){const o=SPEEDS.find(x=>x[0]===speed);return o?o[1]:''}
 function select(o,turnTo){sel=o;if(cam.back>500&&turnTo){}renderCard();if(turnTo)startTurn(o)}
 
 /* ---------- motion ---------- */
@@ -833,10 +840,10 @@ function makePlan(o,preview){
   const D=DRIVES[drive],k=D.kind,v=speed;
   const P={o,d,drive,kind:k,v,hyper:!!D.hyper,ux:dx/dist,uy:dy/dist,uz:dz/dist};
   if(k==='sub'||(k==='kras'&&!(P.tube=findTube(o)))){
-    const beta=k==='kras'?.99:v;P.build=k==='kras';
-    const sh=new Float64Array(NT+1);for(let i=0;i<NT;i++){const b=beta*prof((i+.5)/NT);sh[i+1]=sh[i]+Math.sqrt(1-b*b)/NT}
-    P.earth=d/(beta*C1);P.ship=P.earth*sh[NT];
-    P.at=u=>{const b=beta*prof(u);return{p:interp(CP,u*NT)/C1,te:P.earth*u,ts:P.earth*interp(sh,u*NT),v:b,rate:1/Math.sqrt(1-b*b)}};
+    // idealized cruise: speed-up and slow-down treated as quick, so times match the classic formulas
+    const beta=k==='kras'?.99:v,gam=1/Math.sqrt(1-beta*beta);P.build=k==='kras';
+    P.earth=d/beta;P.ship=P.earth/gam;
+    P.at=u=>{const p=interp(CP,u*NT)/C1,b=beta*prof(u);return{p,te:P.earth*p,ts:P.ship*p,v:b,rate:gam}};
   }else if(k==='kras'){
     const tau=d/.99*Math.sqrt(1-.99*.99);P.ship=tau;P.earth=(P.tube.t0+tau)-clock.E;
     P.at=u=>({p:interp(CP,u*NT)/C1,te:P.earth*u,ts:tau*u,v:.99*prof(u),rate:P.earth/tau});
@@ -867,6 +874,7 @@ function endJump(){
   if(t.kind==='kras'&&t.build)tubes.push({a:t.from.name,b:t.o.name,t0:t.E0});
   curLoc=t.o;sel=t.o;trav=null;document.body.classList.remove('travel');setTimeout(()=>{if(!trav)$('hud').classList.remove('exp')},6000);
   recent=[t.o.name].concat(recent.filter(n=>n!==t.o.name)).slice(0,8);
+  say('Arrived! 🌍 Earth: '+fmtHuman(t.earth)+' passed · 🧑‍🚀 You: '+fmtHuman(t.ship));
   visited.add(t.o.name);checkBadges(t);save();
   hudIdle();renderCard();
 }
@@ -918,7 +926,7 @@ function setMap(on){if(on){cam.bT=70000;cam.pT=-1.2;cam.zoom=1;const a=angTo({po
 bMap.onclick=()=>{if(trav)return;setMap(cam.bT<500)};
 
 /* ---------- controls / navigation ---------- */
-function fillSpeeds(keep){const D=DRIVES[drive];const i=keep?D.opts.findIndex(o=>o[0]===speed):-1;speed=D.opts[i>=0?i:D.def][0];
+function fillSpeeds(keep){const D=DRIVES[drive];if(!SPEEDS.some(o=>o[0]===speed))speed=SPEEDS[SPD_DEF][0];
   $('shipName').textContent=D.ship;const ic=$('shipIco').getContext('2d');ic.setTransform(1,0,0,1,0,0);ic.clearRect(0,0,68,44);drawShip(ic,drive,34,22,19,0,.6)}
 const PAGES=['places','hangar','hunt','log'],MODALS=['info','welcome'];let curPage='sky',recent=[];
 function setFic(on){showFic=on;if(!on&&sel&&sel.kind==='fic'){sel=null;renderCard()}save();if(curPage==='log')buildLog()}
@@ -955,11 +963,11 @@ function buildList(){
 q.oninput=buildList;
 document.querySelectorAll('#ptabs .tab').forEach(b=>b.onclick=()=>{tab=b.dataset.t;document.querySelectorAll('#ptabs .tab').forEach(x=>x.classList.toggle('on',x===b));buildList();list.scrollTop=0});
 // hangar
-function buildHangar(){const box=$('ships');box.innerHTML='<p class="foot" style="margin:0 0 8px">Tap a ship to fly it. Each one crosses space a different way.</p>';
+function buildHangar(){const box=$('ships');box.innerHTML='<p class="foot" style="margin:0 0 8px">Every ship flies close to the speed of light, so time slows down for you compared to Earth. Pick a speed on your ship, then tap any ship to read how its engine works.</p>';
   for(const k of DKEYS){const D=DRIVES[k],on=k===drive;const d=document.createElement('div');d.className='ship'+(on?' on':'');
     d.innerHTML='<canvas width="192" height="136"></canvas><div class="meta"><h3>'+D.ship+(on?' <span style="color:var(--acc);font-size:13px">✓ flying</span>':'')+'</h3><div class="dr">'+D.drive+'</div><span class="tg '+D.tag+'" style="margin:0">'+D.tagT+'</span>'+
-      (on&&D.opts.length>1?'<div class="spd">'+D.opts.map(o=>'<button class="btn'+(o[0]===speed?' on':'')+'" data-v="'+o[0]+'">'+o[1]+'</button>').join('')+'</div>':'')+
-      '<details'+(on?' open':'')+'><summary>How it works</summary><p>'+D.how+'</p><p><b>The catch:</b> '+D.catch+'</p><p><b>Clocks:</b> '+D.clocks+'</p><p><b>Seen in:</b> '+D.seen+'</p></details></div>';
+      (on?'<div class="spd">'+SPEEDS.map(o=>'<button class="btn'+(o[0]===speed?' on':'')+'" data-v="'+o[0]+'">'+o[1]+'</button>').join('')+'</div>':'')+
+      '<details'+(on?' open':'')+'><summary>How it works</summary><p>'+D.how+'</p><p><b>The catch:</b> '+D.catch+'</p><p><b>Seen in:</b> '+D.seen+'</p></details></div>';
     const c=d.querySelector('canvas').getContext('2d');c.scale(2,2);drawShip(c,k,48,34,24,1,.8);
     d.onclick=e=>{if(e.target.closest('details')||e.target.closest('.spd')||on)return;drive=k;fillSpeeds(false);save();buildHangar();renderCard();say('🚀 '+D.ship+' ready · '+D.drive)};
     d.querySelectorAll('.spd .btn').forEach(b=>b.onclick=()=>{speed=+b.dataset.v;save();buildHangar();renderCard()});
@@ -972,7 +980,7 @@ const TIME_DOC=`<h3>Two clocks</h3><p><b style="color:#9fe6ff">τ</b> ("tau") is
 <table><tr><th>Speed</th><th>γ</th><th>1 year for you =</th></tr><tr><td>0.5 c</td><td>1.15</td><td>1.15 Earth years</td></tr><tr><td>0.9 c</td><td>2.29</td><td>2.3 Earth years</td></tr><tr><td>0.99 c</td><td>7.09</td><td>7.1 Earth years</td></tr><tr><td>0.999 c</td><td>22.4</td><td>22 Earth years</td></tr><tr><td>0.99999 c</td><td>224</td><td>224 Earth years</td></tr></table>
 <p>This is real. GPS satellites must correct for it every day, and fast particles from space live longer because of it.</p>
 <h3>The twin paradox</h3><p>If you fly to Proxima Centauri and back at 0.99 c, about 1.2 years pass for you, but about 8.6 years pass on Earth. Your twin would come back 7 years older than you!</p>
-<h3>Faster than light?</h3><p>Nothing can move <i>through</i> space faster than light. But Einstein's theory lets space itself bend and stretch. Warp bubbles and wormholes use that loophole. They need "exotic matter" with negative energy, which nobody has found. And any faster-than-light trip can be turned into a time machine (try the Krasnikov tube ship!), which is why many physicists think nature forbids it.</p>
+<h3>Why not faster than light?</h3><p>Every ship here flies <i>slower</i> than light, because that's what real physics allows, and it's what makes the two clocks disagree. Here are the faster-than-light ideas scientists have dreamed up:</p><p><b>Alcubierre warp drive (1994):</b> squeeze space in front, stretch it behind, and ride a bubble of calm space (Star Trek).</p><p><b>Wormhole / Einstein–Rosen bridge (1935):</b> a shortcut tunnel between two places (Interstellar, Stargate).</p><p><b>Krasnikov tube (1995):</b> fly out slowly, bend space into a tube, and ride it home to arrive just after you left.</p><p>All three need "exotic matter" with negative energy, which nobody has ever found.</p><h3>Why it matters</h3><p>Nothing can move <i>through</i> space faster than light. But Einstein's theory lets space itself bend and stretch. Warp bubbles and wormholes use that loophole. They need "exotic matter" with negative energy, which nobody has found. And any faster-than-light trip can be turned into a time machine (try the Krasnikov tube ship!), which is why many physicists think nature forbids it.</p>
 <h3>Constant thrust</h3><p>A ship that accelerates at 1 g the whole way (and flips to slow down halfway) gets closer and closer to light speed. You could cross to the Andromeda Galaxy in about 28 years of your time, while 2.5 million years pass on Earth.</p>`;
 $('bTime').onclick=()=>showInfo('⏱ About the two clocks',TIME_DOC);
 const TOURS=[['🌟','Our nearest neighbors',['Proxima Centauri','Alpha Centauri',"Barnard's Star",'Wolf 359','Sirius','Sun']],
@@ -981,14 +989,14 @@ const TOURS=[['🌟','Our nearest neighbors',['Proxima Centauri','Alpha Centauri
   ['◇','Famous sci-fi worlds',['Vulcan','Pandora','LV-426','Arrakis','Trantor','Tatooine']],
   ['🔴','Giant stars',['Arcturus','Aldebaran','Betelgeuse','Rigel','Antares','Deneb']],
   ['🌌','Leaving the galaxy',['Omega Centauri','Large Magellanic Cloud','Andromeda Galaxy','M87*']]];
-const BADGES=[['first','🚀','First jump'],['neighbor','👋','Visited a neighbor star'],['bh1','🕳','Found a black hole'],['bh3','⚫','Black hole hunter (3)'],['neb3','🌈','Nebula explorer (3)'],['scifi5','◇','Sci-fi tourist (5)'],['gal','🌌','Left the Milky Way'],['speed','⚡','γ over 100'],['time','⏳','1,000 Earth years passed'],['kras','🔁','Home before you left'],['worm','🌀','Wormhole rider'],['far','🔭','A billion light-years'],['hunter','🪐','Planet hunter'],['hunter_all','🏆','Solved every light curve']];
+const BADGES=[['first','🚀','First jump'],['neighbor','👋','Visited a neighbor star'],['bh1','🕳','Found a black hole'],['bh3','⚫','Black hole hunter (3)'],['neb3','🌈','Nebula explorer (3)'],['scifi5','◇','Sci-fi tourist (5)'],['gal','🌌','Left the Milky Way'],['speed','⚡','γ over 100'],['time','⏳','1,000 Earth years passed'],['twin','👯','Twin paradox: Earth aged 10+ years more'],['life','🪦','A trip longer than a lifetime'],['far','🔭','A billion light-years'],['hunter','🪐','Planet hunter'],['hunter_all','🏆','Solved every light curve']];
 function addBadge(k){if(!badges.has(k)){badges.add(k);save();const b=BADGES.find(x=>x[0]===k);say(b[1]+' Badge earned: '+b[2])}}
 function checkBadges(t){const got=addBadge;
   const vs=[...visited].map(n=>byName[n]).filter(Boolean);
   got('first');if(['Proxima Centauri','Alpha Centauri'].includes(t.o.name))got('neighbor');
   const nbh=vs.filter(o=>o.bh).length;if(nbh>=1)got('bh1');if(nbh>=3)got('bh3');
   if(vs.filter(o=>o.kind==='lm'&&!o.bh&&o.sub!=='gal').length>=3)got('neb3');if(vs.filter(o=>o.kind==='fic').length>=5)got('scifi5');
-  if(t.o.d0>60000)got('gal');if(t.ship>0&&t.earth/t.ship>100)got('speed');if(clock.E>=1000)got('time');if(t.kind==='kras'&&!t.build)got('kras');if(t.kind==='worm')got('worm');if(t.d>1e9)got('far')}
+  if(t.o.d0>60000)got('gal');if(t.ship>0&&t.earth/t.ship>100)got('speed');if(clock.E>=1000)got('time');if(t.earth-t.ship>=10)got('twin');if(t.ship>80)got('life');if(t.d>1e9)got('far')}
 function buildLog(){
   $('logB').innerHTML='<div class="stat"><div><b>'+visited.size+'</b><small>places visited</small></div><div><b>'+badges.size+'/'+BADGES.length+'</b><small>badges</small></div><div><b>'+hunted.size+'/'+HUNT.length+'</b><small>light curves</small></div></div>'+
     '<p>Voyage clocks: <b style="color:#9fe6ff">you +'+fmtTime(clock.S)+'</b> · <b style="color:#ffd28a">Earth +'+fmtTime(clock.E)+'</b><br>Earth date now: <b>'+earthDate(clock.E)+'</b></p>'+
