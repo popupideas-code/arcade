@@ -1,7 +1,7 @@
 (function(){
 'use strict';
 /* ============================== TOPPLE ============================== */
-const VERSION='0.3.0';
+const VERSION='0.3.1';
 const Q=new URLSearchParams(location.search),qn=(k,d)=>Q.has(k)?+Q.get(k):d;
 const SP=qn('sp',.62), GRAV=qn('g',40), HSTEP=1/qn('hz',120);
 const TY={
@@ -13,7 +13,8 @@ const TY={
   WB:{r:.5,m:7,cap:12,ball:1},
   C:{w:.7,h:1,t:.02,m:.08,cap:300},
   P:{r:.14,h:.75,m:.15,cap:120,pin:1},
-  K:{w:.7,h:.12,t:3.2,m:1.2,cap:24}
+  K:{w:.7,h:.12,t:3.2,m:1.2,cap:24},
+  TB:{w:.6,h:.6,t:3,m:6,cap:8,arm:1}
 };
 const MAXD=900;
 const V3=THREE.Vector3;
@@ -24,6 +25,7 @@ const wrap=a=>{while(a>Math.PI)a-=2*Math.PI;while(a<-Math.PI)a+=2*Math.PI;return
 const LS={get(k,d){try{const v=localStorage.getItem('topple.'+k);return v==null?d:JSON.parse(v)}catch(e){return d}},set(k,v){try{localStorage.setItem('topple.'+k,JSON.stringify(v))}catch(e){}}};
 function rng(seed){let a=seed>>>0;return function(){a=(a+0x6D2B79F5)>>>0;let t=a;t=Math.imul(t^(t>>>15),t|1);t^=t+Math.imul(t^(t>>>7),t|61);return((t^(t>>>14))>>>0)/4294967296}}
 const hashStr=s=>[...s].reduce((a,c)=>(Math.imul(a,31)+c.charCodeAt(0))>>>0,7);
+const TB_PIV=1.6,TB_TILT=-Math.asin((TB_PIV-.3)/2);
 const isScored=d=>(d.ty==='n'||d.ty==='T'||d.ty==='W')&&!d.f&&!d.ex;
 
 /* ------------------------------ progress ------------------------------ */
@@ -108,6 +110,11 @@ const sc=sun.shadow.camera;sc.left=-22;sc.right=22;sc.top=22;sc.bottom=-22;sc.ne
 scene.add(sun);scene.add(sun.target);
 const waveLight=new THREE.PointLight(0xffaa55,0,14,1.6);scene.add(waveLight);
 
+function mergeGeo(list){
+  const P=[],N=[],U=[];
+  for(const [g,x,y,z] of list){const n=g.index?g.toNonIndexed():g;n.translate(x,y,z);P.push(...n.attributes.position.array);N.push(...n.attributes.normal.array);U.push(...n.attributes.uv.array)}
+  const o=new THREE.BufferGeometry();o.setAttribute('position',new THREE.Float32BufferAttribute(P,3));o.setAttribute('normal',new THREE.Float32BufferAttribute(N,3));o.setAttribute('uv',new THREE.Float32BufferAttribute(U,2));return o;
+}
 function canvasTex(w,h,draw,srgb){const c=document.createElement('canvas');c.width=w;c.height=h;draw(c.getContext('2d'),w,h);const t=new THREE.CanvasTexture(c);if(srgb!==false)t.encoding=THREE.sRGBEncoding;t.anisotropy=4;return t}
 const tex=canvasTex(64,128,g=>{
   g.fillStyle='#fff';g.fillRect(0,0,64,128);g.fillStyle='#2a2438';g.fillRect(6,62,52,4);
@@ -122,15 +129,16 @@ const cardTex=canvasTex(70,100,g=>{g.fillStyle='#fff';g.fillRect(0,0,70,100);g.f
 const cardM=new THREE.MeshStandardMaterial({color:0xffffff,map:cardTex,roughness:.6});
 const pinTex=canvasTex(8,64,g=>{g.fillStyle='#fff';g.fillRect(0,0,8,64);g.fillStyle='#d01830';g.fillRect(0,14,8,4);g.fillRect(0,21,8,4)});
 const pinM=new THREE.MeshStandardMaterial({color:0xffffff,map:pinTex,roughness:.35});
-const geo={},inst={},ghost={},ghostCap={n:400,T:20,W:60,B:8,b:8,WB:4,C:40,P:20,K:4};
+const geo={},inst={},ghost={},ghostCap={n:400,T:20,W:60,B:8,b:8,WB:4,C:40,P:20,K:4,TB:2};
 const ghostMat=new THREE.MeshBasicMaterial({color:0x7cffb2,transparent:true,opacity:.55,depthWrite:false});
 const ghostBad=new THREE.MeshBasicMaterial({color:0xff5a6e,transparent:true,opacity:.55,depthWrite:false});
 for(const k in TY){
   const d=TY[k];
-  if(d.ball)geo[k]=new THREE.SphereGeometry(d.r,20,14);
+  if(d.arm)geo[k]=mergeGeo([[new THREE.BoxGeometry(.16,.12,3),0,0,-.5],[new THREE.BoxGeometry(.6,.6,.6),0,0,1],[new THREE.BoxGeometry(.44,.26,.06),0,.12,-2.03],[new THREE.BoxGeometry(.06,.2,.5),.2,.1,-1.8],[new THREE.BoxGeometry(.06,.2,.5),-.2,.1,-1.8]]);
+  else if(d.ball)geo[k]=new THREE.SphereGeometry(d.r,20,14);
   else if(d.pin){geo[k]=new THREE.LatheGeometry([[0,0],[.1,.01],[.14,.18],[.12,.36],[.06,.5],[.075,.62],[.06,.72],[0,.75]].map(p=>new THREE.Vector2(p[0],p[1])),16);geo[k].translate(0,-d.h/2,0)}
   else geo[k]=new THREE.BoxGeometry(d.w,d.h,d.t);
-  const mats=d.ball?ballM:d.pin?pinM:k==='C'?[sideM,sideM,sideM,sideM,cardM,cardM]:k==='W'||k==='K'?plainM:[sideM,sideM,sideM,sideM,faceM,faceM];
+  const mats=d.ball?ballM:d.pin?pinM:k==='C'?[sideM,sideM,sideM,sideM,cardM,cardM]:k==='W'||k==='K'||d.arm?plainM:[sideM,sideM,sideM,sideM,faceM,faceM];
   inst[k]=new THREE.InstancedMesh(geo[k],mats,d.cap);
   inst[k].instanceMatrix.setUsage(THREE.DynamicDrawUsage);
   inst[k].setColorAt(0,new THREE.Color(1,1,1));
@@ -347,6 +355,7 @@ function pointsOf(x,z,r,ty,f){
   const cr=Math.cos(r),sr=Math.sin(r);let s;
   if(ty==='B'||ty==='b')s=[[0,0,TY[ty].r]];else if(ty==='WB')s=[[0,0,.5]];else if(ty==='P'||ty==='C')s=[[0,0,.16]];
   else if(ty==='K')s=[[0,-1.2,.3],[0,0,.3],[0,1.2,.3]];
+  else if(ty==='TB')s=[[0,-1.4,.3],[0,-.4,.3],[0,.8,.45]];
   else if(f)s=[[0,-.3,.24],[0,.3,.24]];else if(ty==='W')s=[[-.9,0,.21],[0,0,.21],[.9,0,.21]];else if(ty==='T')s=[[0,0,.38]];else s=[[0,0,.21]];
   return s.map(p=>[x+p[0]*cr+p[1]*sr,z-p[0]*sr+p[1]*cr,p[2]]);
 }
@@ -412,6 +421,14 @@ function climb(h,ball){
   const pz=z+SP*.5+.25;pr.push({x:0,z:pz,r:0,w:1.1,d:.5,h,kind:'stone'});
   it.push(Object.assign({x:0,z:pz+.1,r:0,ty:'b',y:h},ball||{}));
   return{it,pr,edge:pz+.25};
+}
+function rampSeg(S,E,w,W0,wh){wh=wh||.4;
+  const dx=E.x-S.x,dz=E.z-S.z,hl=Math.hypot(dx,dz),dy=S.y-E.y,len=Math.hypot(hl,dy),r=Math.atan2(dx,dz),tx=Math.atan2(dy,hl),th=.12;
+  const n={x:Math.sin(r)*Math.sin(tx),y:Math.cos(tx),z:Math.cos(r)*Math.sin(tx)},xa={x:Math.cos(r),z:-Math.sin(r)},m={x:(S.x+E.x)/2,y:(S.y+E.y)/2,z:(S.z+E.z)/2};
+  const out=[{x:m.x-n.x*th/2,z:m.z-n.z*th/2,cy:m.y-n.y*th/2,r,tx,w,d:len,h:th,kind:'ramp'}];
+  const A=W0||S,wl=len*Math.hypot(E.x-A.x,E.z-A.z)/hl,wm={x:(A.x+E.x)/2,y:(A.y+E.y)/2,z:(A.z+E.z)/2};
+  [-1,1].forEach(sd=>out.push({x:wm.x+n.x*wh/2+xa.x*sd*(w/2+.05),z:wm.z+n.z*wh/2+xa.z*sd*(w/2+.05),cy:wm.y+n.y*wh/2,r,tx,w:.08,d:wl,h:wh,kind:'rail'}));
+  return out;
 }
 function rails(z0,len,half,h){return[-1,1].map(s=>({x:s*half,z:z0+len/2,r:0,w:.1,d:len,h:h||.16,rail:1,kind:'rail'}))}
 function leadIn(n){const t=new Tt();t.dom().straight(n-1);return t}
@@ -506,9 +523,20 @@ const BUILD={
   ball(){return ballRun(4.2)},
   relay(){return ballRun(9)},
   marble(){
-    const c=climbRamp(1.2,4.6,.9),z1=c.end;c.pr.push(...rails(z1,3,.42,.25));
-    const b=new Tt();b.z=z1+3.2;b.dom().straight(4);c.it.push(...b.it);
-    return{it:c.it,pr:c.pr,exits:[b.last()]};
+    // stairs up, then a switchback: three ramps zig-zagging down, each ending at a wall over the next
+    const t=leadIn(2),it=t.it.slice(),pr=[],H=2.1;let z=t.z,y=0;
+    while(y<H-.01){y=Math.min(H,y+.15);z+=SP;it.push({x:0,z,r:0,ty:'n',y});pr.push({x:0,z,r:0,w:1.1,d:SP,h:y,kind:'stone'})}
+    let S={x:0,y:H,z:z+SP*.5},hd=0;const segs=[[0,.25],[-1,.25],[1,.2]];let E;
+    segs.forEach((sg,i)=>{hd=sg[0];const hl=2.7,dir={x:Math.sin(hd),z:Math.cos(hd)};
+      const back=i?.55:0,S2={x:S.x-dir.x*back,y:S.y+sg[1]*back/hl,z:S.z-dir.z*back};E={x:S.x+dir.x*hl,y:S.y-sg[1],z:S.z+dir.z*hl};
+      pr.push(...rampSeg(S2,E,1.15,S2,.34));
+      if(i===0){const tx=Math.atan2(sg[1],hl),al=.5,br=TY.B.r;it.push({x:S.x+dir.x*al*Math.cos(tx),z:S.z+dir.z*al*Math.cos(tx),r:0,ty:'B',cy:S.y-al*Math.sin(tx)+br/Math.cos(tx)+.01})}
+      if(i<segs.length-1){const h2=segs[i+1][0],xa={x:Math.cos(hd),z:-Math.sin(hd)},sd=Math.sign(Math.sin(h2)*xa.x+Math.cos(h2)*xa.z)||1;
+        pr.push({x:E.x+dir.x*.8-xa.x*sd*.3,z:E.z+dir.z*.8-xa.z*sd*.3,cy:E.y-.2,r:hd,w:1.05,d:.1,h:1.1,kind:'rail'});S={x:E.x+dir.x*.05,y:E.y-.7,z:E.z+dir.z*.05}}});
+    const dir={x:Math.sin(hd),z:Math.cos(hd)},ex=E.x+dir.x*.6,ez=E.z+dir.z*.6;
+    [-1,1].forEach(sd=>pr.push({x:ex+dir.x*1.2+Math.cos(hd)*sd*.45,z:ez+dir.z*1.2-Math.sin(hd)*sd*.45,r:hd,w:.1,d:2.6,h:.25,rail:1,kind:'rail'}));
+    const b=new Tt();b.x=ex+dir.x*2.8;b.z=ez+dir.z*2.8;b.h=hd;b.dom().straight(3);it.push(...b.it);
+    return{it,pr,exits:[b.last()]};
   },
   tramp(){
     const c=climb(1.2,{rest:.85}),zt=c.edge+.55;
@@ -517,11 +545,16 @@ const BUILD={
     return{it:c.it,pr:c.pr,exits:[b.last()]};
   },
   seesaw(){
-    const t=leadIn(3),it=t.it.slice(),zc=t.z+1.1;
-    it.push({x:0,z:zc+.95,r:0,ty:'B',cy:.72,rest:.3});
-    const pr=rails(zc+3.2,6.6,.55,.6);
-    const b=new Tt();b.z=zc+10.2;b.dom().straight(4);it.push(...b.it);
-    return{it,pr,fx:[{k:'cat',x:0,z:zc}],exits:[b.last()]};
+    // a real trebuchet: counterweight drops, the joint stops the arm and the ball flies on
+    const t=leadIn(3),it=t.it.slice(),th=TB_TILT,cy=Math.cos(th),sy=Math.sin(th);
+    const lz=-1.82,ly=.06+TY.b.r+.004,bz=ly*sy+lz*cy,by=ly*cy-lz*sy;
+    const zp=t.z+.75-bz;
+    it.push({x:0,z:zp,r:0,ty:'TB',cy:TB_PIV,tx:th,arm:1});
+    it.push({x:0,z:zp+bz,r:0,ty:'b',cy:TB_PIV+by,rest:.3});
+    const pr=[[-1,.45],[1,.45]].map(a=>({x:a[0]*a[1],z:zp,r:0,w:.1,d:.24,h:TB_PIV+.12,kind:'post'}));
+    pr.push(...rails(zp+1.6,9,.6,.7));
+    const b=new Tt();b.z=zp+10.9;b.dom().straight(4);it.push(...b.it);
+    return{it,pr,exits:[b.last()]};
   },
   wrecker(){
     const t=leadIn(3),it=t.it.slice(),L1=3.4,ang=55*Math.PI/180;
@@ -635,7 +668,7 @@ function stampCheck(w){
 }
 function stampCommit(id,w,meta){
   const gid='g'+L.uid++;const first=L.d.length;
-  for(const o of w.it){const d=addDom(o.x,o.z,o.r,o.ty,o.y,gid,false,o.f);for(const k of ['cy','tx','col','ex','bn','rest','pivot','ax','ay','az'])if(o[k]!=null)d[k]=o[k]}
+  for(const o of w.it){const d=addDom(o.x,o.z,o.r,o.ty,o.y,gid,false,o.f);for(const k of ['cy','tx','col','ex','bn','rest','pivot','ax','ay','az','arm'])if(o[k]!=null)d[k]=o[k]}
   for(const pr of w.pr)L.p.push(Object.assign({id:L.uid++,g:gid},pr));
   for(const d of w.deco)L.deco.push(Object.assign({g:gid},d));
   for(const f of w.fx)L.fx.push(Object.assign({id:L.uid++,g:gid},f));
@@ -753,7 +786,7 @@ function poseOf(d){
 function baseColor(d,out){
   if(d.col!=null)return out.setHex(d.col);
   if(d.ty==='B'||d.ty==='b')return out.setRGB(.85,.88,.95);if(d.ty==='WB')return out.setRGB(.25,.25,.3);
-  if(d.ty==='P')return out.setRGB(1,1,1);if(d.ty==='C')return out.setHSL((d.c*.07)%1,.15,.95);if(d.ty==='K')return out.setRGB(.62,.42,.25);
+  if(d.ty==='P')return out.setRGB(1,1,1);if(d.ty==='C')return out.setHSL((d.c*.07)%1,.15,.95);if(d.ty==='K'||d.ty==='TB')return out.setRGB(.62,.42,.25);
   skinColor(d.c,out);if(d.f)out.multiplyScalar(.82);return out;
 }
 const OBST={
@@ -1395,8 +1428,11 @@ function buildWorld(){
     let cd;
     if(t.ball)cd=R.ColliderDesc.ball(t.r).setMass(t.m).setFriction(.5).setRestitution(d.rest!=null?d.rest:.1);
     else if(t.pin)cd=R.ColliderDesc.cylinder(t.h/2,t.r*.8).setMass(t.m).setFriction(1.1);
+    else if(t.arm){[[.08,.06,1.5,0,0,-.5,.6],[.3,.3,.3,0,0,1,6],[.22,.13,.03,0,.12,-2.03,.05],[.03,.1,.25,.2,.1,-1.8,.02],[.03,.1,.25,-.2,.1,-1.8,.02]].forEach(c=>world.createCollider(R.ColliderDesc.cuboid(c[0],c[1],c[2]).setTranslation(c[3],c[4],c[5]).setMass(c[6]).setFriction(.6),b));cd=null}
     else cd=R.ColliderDesc.cuboid(t.w/2,t.h/2,t.t/2).setMass(t.m).setFriction(d.ty==='C'?.6:qn('fr',.3)).setRestitution(qn('re',0));
-    world.createCollider(cd,b);
+    if(cd)world.createCollider(cd,b);
+    if(d.arm){const fb=world.createRigidBody(R.RigidBodyDesc.fixed().setTranslation(pos.x,pos.y+.003,pos.z).setRotation({x:0,y:Math.sin(d.r/2),z:0,w:Math.cos(d.r/2)}));
+      const j=world.createImpulseJoint(R.JointData.revolute({x:0,y:0,z:0},{x:0,y:0,z:0},{x:1,y:0,z:0}),fb,b,true);try{j.setLimits(qn('tlo',-.8),qn('thi',.8))}catch(e){}}
     if(d.pivot){const fb=world.createRigidBody(R.RigidBodyDesc.fixed().setTranslation(pos.x,pos.y+.003,pos.z).setRotation({x:0,y:Math.sin(d.r/2),z:0,w:Math.cos(d.r/2)}));
       world.createImpulseJoint(R.JointData.revolute({x:0,y:0,z:0},{x:0,y:0,z:0},{x:1,y:0,z:0}),fb,b,true)}
     if(d.ay!=null){const fb=world.createRigidBody(R.RigidBodyDesc.fixed().setTranslation(d.ax,d.ay,d.az));
@@ -1760,7 +1796,7 @@ window.TOPPLE={
   reset(){const t=L.theme,g=L.grav;L=newLayout();L.theme=t;L.grav=g;undoStack=[]},
   stats(){const s=L.d.filter(isScored);return{fins:P?P.fins.length:0,pins:P?P.pins:0,bonus:Object.values(bonusG).map(g=>g.kind+':'+g.down+'/'+g.n+(g.done?'✓':'')).join(' '),top:s.filter(d=>d._top).length,total:s.length,burned:P&&P.burned,P:P&&{t:P.t,score:P.score,best:P.best,over:P.over,goal:P.goal,tHit:P.tHit,tiles:P.tiles},res:P&&P.result&&{stars:P.result.stars,strag:P.result.strag}}},
   screenOf(d){const v=new V3(d.x,.5,d.z).project(camera);return{x:(v.x+1)/2*innerWidth,y:(1-v.y)/2*innerHeight}},
-  start:startKind,bodies:()=>bodies,level:startLevel,levels:showLevels,mode:()=>mode,modDef,xform,stampCheck,makeCourse,setTheme:(id)=>{L.theme=id;L.grav=TH[id].grav||GRAV;setTheme(id,L.fw,L.fd);dirty=true}
+  scene,inst,emojiGrid,wordGrid,start:startKind,bodies:()=>bodies,level:startLevel,levels:showLevels,mode:()=>mode,modDef,xform,stampCheck,makeCourse,setTheme:(id)=>{L.theme=id;L.grav=TH[id].grav||GRAV;setTheme(id,L.fw,L.fd);dirty=true}
 };
 
 /* ------------------------------ boot ------------------------------ */
