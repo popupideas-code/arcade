@@ -2,3 +2,8 @@
   Cache-Control: no-cache
 /*
   X-Content-Type-Options: nosniff
+
+/topple/index.html
+  Cache-Control: no-cache
+/topple/game.js
+  Cache-Control: no-cache
