@@ -48,7 +48,7 @@ canvas.full{position:fixed;inset:0;width:100%;height:100%;display:block}
 #bShip{display:flex;align-items:center;gap:6px;justify-content:center}
 #bShip canvas{width:34px;height:22px;flex:none}
 select.btn{padding-right:4px;-webkit-appearance:none;appearance:none;text-align:center}
-.sheet{position:fixed;inset:0;background:rgba(2,3,10,.97);display:none;flex-direction:column;padding:calc(env(safe-area-inset-top) + 10px) 12px calc(env(safe-area-inset-bottom) + 10px);gap:8px;z-index:6}
+.sheet{position:fixed;inset:0;background:#02030a;display:none;flex-direction:column;padding:calc(env(safe-area-inset-top) + 10px) 12px calc(env(safe-area-inset-bottom) + 10px);gap:8px;z-index:6}
 .sheet .sh{display:flex;gap:8px;align-items:center}.sheet .sh h2{flex:1;margin:0;font-size:18px}
 .scroll{flex:1;overflow-y:auto;touch-action:pan-y;-webkit-overflow-scrolling:touch;-webkit-user-select:text;user-select:text}
 #q{flex:1;background:rgba(24,38,80,.6);color:var(--fg);border:1px solid var(--line);border-radius:11px;padding:10px 12px;font:inherit;min-width:0}
@@ -76,6 +76,9 @@ select.btn{padding-right:4px;-webkit-appearance:none;appearance:none;text-align:
 .menu .btn{width:100%;text-align:left;margin-bottom:8px;font-size:15px;min-height:50px}
 #welcome .doc{max-width:520px;margin:0 auto}
 #toast{position:fixed;left:50%;top:calc(env(safe-area-inset-top) + 76px);transform:translateX(-50%);background:rgba(8,12,28,.94);border:1px solid rgba(255,210,138,.5);padding:9px 14px;border-radius:12px;z-index:20;display:none;max-width:88vw;font-size:13.5px;text-align:center}
+#hunt .sh h2{font-size:18px}#hcv{width:100%;height:230px;border-radius:12px;background:#050915;touch-action:none;flex:none;border:1px solid var(--line)}
+.hctl{display:flex;gap:6px;flex-wrap:wrap;flex:none}.hans{display:flex;gap:6px;flex:none}.hans .btn{flex:1;padding:6px 4px;font-size:13.5px}
+#hMsg{flex:1;min-height:60px}#hMsg table{width:100%}
 body.insys #hud,body.insys #topR,body.insys #bottom{display:none}
 </style>
 </head>
@@ -138,6 +141,7 @@ body.insys #hud,body.insys #topR,body.insys #bottom{display:none}
 <div id="menu" class="sheet menu">
   <div class="sh"><h2>Menu</h2><button class="btn" data-close>Close</button></div>
   <div class="scroll">
+    <button class="btn" id="mHunt">🪐 Planet Hunter (find planets in starlight)</button>
     <button class="btn" id="mTours">🧭 Guided tours</button>
     <button class="btn" id="mLog">🏅 Logbook &amp; badges</button>
     <button class="btn" id="mTime">⏱ About the two clocks</button>
@@ -153,9 +157,19 @@ body.insys #hud,body.insys #topR,body.insys #bottom{display:none}
     <h3>1 · Pick a place</h3><p>Tap a star, a glowing nebula, a 🕳 black hole, or a ◇ sci-fi world. Or press <b>☰ Places</b>.</p>
     <h3>2 · Pick a ship</h3><p>Each ship uses a different way to cross space: real light sails and rockets, theoretical warp drives and wormholes, or pure sci-fi jumps. Tap the ship button to read how each one works.</p>
     <h3>3 · Watch the two clocks</h3><p><b style="color:#9fe6ff">τ</b> is <i>your</i> clock. <b style="color:#ffd28a">t</b> is Earth's clock. Fly close to light speed and Earth's clock races ahead of yours: that's Einstein's time dilation.</p>
-    <h3>4 · Explore</h3><p>When you arrive, press <b>Enter system</b> to fly around the planets in 3D. Try <b>🌌 Galaxy map</b> to see where you are in the Milky Way.</p>
+    <h3>4 · Hunt for planets</h3><p>In <b>⋯ → 🪐 Planet Hunter</b>, find planets the way TESS does: spot the tiny dips in a star's light when a planet passes in front.</p>
+    <h3>5 · Explore</h3><p>When you arrive, press <b>Enter system</b> to fly around the planets in 3D. Try <b>🌌 Galaxy map</b> to see where you are in the Milky Way.</p>
     <p style="margin-top:16px"><button class="btn go" id="bStart" style="width:100%">Let's go!</button></p>
   </div>
+</div>
+<div id="hunt" class="sheet">
+  <div class="sh"><h2>🪐 Planet Hunter</h2><button class="btn" data-close>Close</button></div>
+  <div class="tabs" id="hLv"></div>
+  <div id="hHead"></div>
+  <canvas id="hcv"></canvas>
+  <div class="hctl"><button class="btn sm" id="hZo">− Zoom out</button><button class="btn sm" id="hZi">+ Zoom in</button><button class="btn sm" id="hAll">Whole graph</button><button class="btn sm" id="hHint">💡 Hint</button><button class="btn sm" id="hClr">Clear marks</button></div>
+  <div class="scroll doc" id="hMsg"></div>
+  <div class="hans"><button class="btn" data-a="planet">🪐 Planet!</button><button class="btn" data-a="eb">⭐⭐ Two stars</button><button class="btn" data-a="none">😴 Nothing</button></div>
 </div>
 <div id="toast"></div>
 
@@ -229,7 +243,12 @@ const STARS=[
 ["Rigel",5.242,-8.20,860,"B",120000,"Blue supergiant in Orion."],
 ["Deneb",20.69,45.28,2600,"A",200000,"Blue-white supergiant, tail of Cygnus."],
 ["Delta Pavonis",20.1454,-66.182,19.9,"G",1.2,"Sun-like star in Pavo, a long-time target for planet searches."],
-["36 Ophiuchi",17.2558,-26.603,19.5,"K",0.28,"Triple system of orange dwarfs."]
+["36 Ophiuchi",17.2558,-26.603,19.5,"K",0.28,"Triple system of orange dwarfs."],
+["Pi Mensae",5.6194,-80.469,59.6,"G",1.44,"Sun-like star where TESS found its very first new planet (2018)."],
+["LHS 3844",22.6997,-69.166,48.6,"M",0.0027,"Small red dwarf with a planet that circles it every 11 hours."],
+["AU Microscopii",20.7527,-31.342,31.7,"M",0.1,"A baby star, only about 22 million years old, with a dusty disk and young planets."],
+["HD 209458",22.053,18.884,159,"G",1.6,"In 1999 its planet became the first ever seen passing in front of its star."],
+["TOI-700",6.4731,-65.578,101.4,"M",0.023,"Red dwarf with an Earth-size planet in its habitable zone, found by TESS in 2020."]
 ];
 // name, RA, Dec, dist (ly), mass (Suns), note
 const BHS=[
@@ -594,8 +613,8 @@ let fx=1,fy=0,fz=0,rx=0,ry=-1,rz=0,ux=0,uy=0,uz=1,cx=0,cy=0,focal=500,PX=0,PY=0;
 let picks=[];
 let drive='warp',speed=1000;
 const clock={E:0,S:0};let visited=new Set(['Sun']),badges=new Set(),tubes=[],tour=null;
-function save(){try{localStorage.setItem('gx2',JSON.stringify({E:clock.E,S:clock.S,visited:[...visited],badges:[...badges],tubes,drive,speed,cur:curLoc.name,fic:showFic}))}catch(e){}}
-function load(){try{const s=JSON.parse(localStorage.getItem('gx2')||'null');if(!s)return false;clock.E=s.E||0;clock.S=s.S||0;visited=new Set(s.visited||['Sun']);badges=new Set(s.badges||[]);tubes=s.tubes||[];
+function save(){try{localStorage.setItem('gx2',JSON.stringify({E:clock.E,S:clock.S,visited:[...visited],badges:[...badges],tubes,drive,speed,cur:curLoc.name,fic:showFic,hunted:[...hunted]}))}catch(e){}}
+function load(){try{const s=JSON.parse(localStorage.getItem('gx2')||'null');if(!s)return false;clock.E=s.E||0;clock.S=s.S||0;visited=new Set(s.visited||['Sun']);badges=new Set(s.badges||[]);tubes=s.tubes||[];hunted=new Set(s.hunted||[]);
   if(DRIVES[s.drive]){drive=s.drive;speed=s.speed}showFic=s.fic!==false;const c=byName[s.cur];if(c){curLoc=c;const st=Math.min(c.stop,c.d0*.5);const k=c.d0>0?(c.d0-st)/c.d0:0;cam.x=c.pos[0]*k;cam.y=c.pos[1]*k;cam.z=c.pos[2]*k}return true}catch(e){return false}}
 
 /* ---------- projection + render ---------- */
@@ -754,11 +773,12 @@ function renderCard(){
   const goLabel=here?(canEnter(o)?'Enter system ▸':'Look around'):DRIVES[drive].verb+' ▸';
   card.innerHTML='<div class="t"><b>'+o.name+'</b>'+tagFor(o)+(tour?'<span class="tag" style="border-color:#ffd28a;color:#ffd28a">Tour '+(tour.i+1)+'/'+tour.list.length+'</span>':'')+'</div>'+
     '<div class="s">'+sub+' · '+(o.d0>0?fmtLy(o.d0)+' from the Sun':'home')+(here?' · you are here':' · '+fmtLy(dist)+' away')+'</div>'+
-    '<div class="n">'+o.note+'</div>'+info+
+    '<div class="n">'+o.note+'</div>'+info+(HUNT.some(x=>x.star===o.name)?'<button class="btn sm" id="bHunt" style="margin-bottom:8px;width:100%">🪐 Hunt for planets in this star\'s light'+(hunted.has(o.name)?' ✓':'')+'</button>':'')+
     '<div class="b">'+(here&&!canEnter(o)&&!tourBtn?'':'<button class="btn go" id="bGo">'+goLabel+'</button>')+tourBtn+'<button class="btn" id="bX" aria-label="Close" style="flex:0 0 46px">✕</button></div>';
   card.style.display='block';
   const bg=$('bGo');if(bg)bg.onclick=()=>{if(here){if(canEnter(o))enterSystem(o)}else startJump(o)};
   $('bX').onclick=()=>{sel=null;renderCard()};
+  const bh=$('bHunt');if(bh)bh.onclick=()=>openHunt(o.name);
   const bn=$('bNext');if(bn)bn.onclick=()=>{tour.i++;const nx=tour.list[tour.i];if(!nx){tour=null;say('🏁 Tour complete! Great exploring.');renderCard();return}select(byName[nx],true)};
 }
 function optLabel(){const o=DRIVES[drive].opts.find(x=>x[0]===speed);return o?o[1]:''}
@@ -866,7 +886,7 @@ function fillSpeeds(keep){const D=DRIVES[drive];sSpd.innerHTML='';D.opts.forEach
   $('shipName').textContent=D.ship;const ic=$('shipIco').getContext('2d');ic.setTransform(1,0,0,1,0,0);ic.clearRect(0,0,68,44);drawShip(ic,drive,34,22,19,0,.6)}
 sSpd.onchange=()=>{speed=+sSpd.value;save();renderCard()};
 function setFic(on){showFic=on;$('mFic').textContent='◇ Sci-fi places: '+(on?'on':'off');if(!on&&sel&&sel.kind==='fic'){sel=null;renderCard()}save()}
-const sheets=['places','hangar','info','menu','welcome'];
+const sheets=['places','hangar','info','menu','welcome','hunt'];
 function openSheet(id){sheets.forEach(s=>$(s).style.display=s===id?'flex':'none')}
 function closeSheets(){sheets.forEach(s=>$(s).style.display='none')}
 document.querySelectorAll('[data-close]').forEach(b=>b.onclick=closeSheets);
@@ -924,8 +944,9 @@ const TOURS=[['🌟','Our nearest neighbors',['Proxima Centauri','Alpha Centauri
 $('mTours').onclick=()=>{showInfo('🧭 Guided tours','<p>Pick a tour. After each arrival, press <b>Next</b> on the card.</p>'+TOURS.map((t,i)=>'<div class="row" data-tour="'+i+'"><div class="a"><span>'+t[0]+' '+t[1]+'</span><small>'+t[2].join(' → ')+'</small></div><div class="d">▸</div></div>').join(''));
   document.querySelectorAll('[data-tour]').forEach(r=>r.onclick=()=>{const t=TOURS[+r.dataset.tour];tour={list:t[2],i:0};closeSheets();if(cam.bT>500)setMap(false);if(t[1].includes('sci-fi'))setFic(true);select(byName[t[2][0]],true);say(t[0]+' '+t[1]+': first stop '+t[2][0])})};
 // badges
-const BADGES=[['first','🚀','First jump'],['neighbor','👋','Visited a neighbor star'],['bh1','🕳','Found a black hole'],['bh3','⚫','Black hole hunter (3)'],['neb3','🌈','Nebula explorer (3)'],['scifi5','◇','Sci-fi tourist (5)'],['gal','🌌','Left the Milky Way'],['speed','⚡','γ over 100'],['time','⏳','1,000 Earth years passed'],['kras','🔁','Home before you left'],['worm','🌀','Wormhole rider'],['far','🔭','A billion light-years']];
-function checkBadges(t){const got=k=>{if(!badges.has(k)){badges.add(k);const b=BADGES.find(x=>x[0]===k);say(b[1]+' Badge earned: '+b[2])}};
+const BADGES=[['first','🚀','First jump'],['neighbor','👋','Visited a neighbor star'],['bh1','🕳','Found a black hole'],['bh3','⚫','Black hole hunter (3)'],['neb3','🌈','Nebula explorer (3)'],['scifi5','◇','Sci-fi tourist (5)'],['gal','🌌','Left the Milky Way'],['speed','⚡','γ over 100'],['time','⏳','1,000 Earth years passed'],['kras','🔁','Home before you left'],['worm','🌀','Wormhole rider'],['far','🔭','A billion light-years'],['hunter','🪐','Planet hunter'],['hunter_all','🏆','Solved every light curve']];
+function addBadge(k){if(!badges.has(k)){badges.add(k);save();const b=BADGES.find(x=>x[0]===k);say(b[1]+' Badge earned: '+b[2])}}
+function checkBadges(t){const got=addBadge;
   const vs=[...visited].map(n=>byName[n]).filter(Boolean);
   got('first');if(['Proxima Centauri','Alpha Centauri'].includes(t.o.name))got('neighbor');
   const nbh=vs.filter(o=>o.bh).length;if(nbh>=1)got('bh1');if(nbh>=3)got('bh3');
@@ -955,6 +976,132 @@ async function enterSystem(o){
   try{await loadSys();paused=true;await window.SysView.open(o)}
   catch(e){paused=false;say('3D view failed to load: '+e.message);renderCard()}
 }
+
+/* ---------- Planet Hunter mini-game ---------- */
+const RE_RS=0.009168,ZOO='https://www.zooniverse.org/projects/nora-dot-eisner/planet-hunters-tess/classify/workflow/11235';
+const HUNT=[
+ {star:'HD 209458',Rs:1.16,M:1.15,sigma:.0008,answer:'planet',planets:[{n:'HD 209458 b',P:3.5247,Rp:15.4}],
+  intro:'Start easy. This star\'s light dips when something passes in front of it. Tap each dip you see.',
+  fact:'In 1999, HD 209458 b became the first planet ever seen crossing in front of its star. Astronomers nicknamed it Osiris.'},
+ {star:'Tau Ceti',Rs:.79,M:.78,sigma:.00045,spots:{A:.0005,P:34},answer:'none',planets:[],
+  intro:'A Sun-like star just 12 light-years away. Look carefully. Are there dips that repeat?',
+  fact:'Tau Ceti probably has planets, but their orbits are tilted, so from Earth they never pass in front of the star. The transit method only works when we see an orbit edge-on.'},
+ {star:'Pi Mensae',Rs:1.1,M:1.09,sigma:.00011,answer:'planet',planets:[{n:'Pi Mensae c',P:6.268,Rp:2.04}],
+  intro:'This one is harder: the dips are tiny. Use + to zoom in and drag to slide along.',
+  fact:'Pi Mensae c was the very first new planet discovered by TESS, in 2018. It blocks only 0.03% of its star\'s light.'},
+ {star:'TIC 0000001 (made-up star)',Rs:1,M:1,sigma:.002,eb:{P:3.1,d1:.32,d2:.11,D:.32},answer:'eb',planets:[],
+  intro:'Whoa, big dips! Mark them, then decide: is it a planet, or something else?',
+  fact:'This is an eclipsing binary: two stars taking turns blocking each other. Clues: the dips are far too deep for a planet (even Jupiter blocks only about 1% of a Sun-like star), and every other dip is shallower. These fool planet hunters all the time!'},
+ {star:'AU Microscopii',Rs:.75,M:.5,sigma:.0005,spots:{A:.0035,P:4.86},flares:14,answer:'planet',planets:[{n:'AU Mic b',P:8.463,Rp:4.2},{n:'AU Mic c',P:18.86,Rp:3.2}],need:2,
+  intro:'A baby star covered in starspots, so its light waves up and down. Spikes UP are flares. Planets only make dips DOWN.',
+  fact:'AU Mic is only about 22 million years old. Its planets were found by TESS in 2020, even through all the flares and spots.'},
+ {star:'LHS 3844',Rs:.19,M:.15,sigma:.0016,answer:'planet',planets:[{n:'LHS 3844 b',P:.4629,Rp:1.3}],need:4,
+  intro:'A small red dwarf. Lots of dips here. Mark at least 4.',
+  fact:'LHS 3844 b goes around its star every 11 hours. A whole year there is shorter than a school day!'},
+ {star:'TRAPPIST-1',Rs:.119,M:.09,sigma:.0021,span:20,answer:'planet',need:6,planets:[{n:'TRAPPIST-1 b',P:1.511,Rp:1.12},{n:'TRAPPIST-1 c',P:2.422,Rp:1.1},{n:'TRAPPIST-1 d',P:4.05,Rp:.79},{n:'TRAPPIST-1 e',P:6.1,Rp:.92},{n:'TRAPPIST-1 f',P:9.21,Rp:1.05},{n:'TRAPPIST-1 g',P:12.35,Rp:1.13},{n:'TRAPPIST-1 h',P:18.77,Rp:.76}],
+  intro:'A tiny, faint red star with LOTS going on. Dips of different depths mean different planets. Mark at least 6.',
+  fact:'TRAPPIST-1 has seven Earth-size planets, and three are in the zone where liquid water could exist. (They were found by other telescopes; this light curve is simulated.)'},
+ {star:'TOI-700',Rs:.42,M:.42,sigma:.00035,span:54,answer:'planet',need:3,planets:[{n:'TOI-700 b',P:9.98,Rp:1.04},{n:'TOI-700 c',P:16.05,Rp:2.65},{n:'TOI-700 e',P:27.8,Rp:.95},{n:'TOI-700 d',P:37.42,Rp:1.19}],
+  intro:'The final challenge: two months of TESS data. Somewhere in here is an Earth-size planet in the habitable zone.',
+  fact:'TOI-700 d was the first Earth-size planet in a habitable zone found by TESS (2020). Volunteers and astronomers combed through light curves just like this one.'}
+];
+const durDays=(P,Rs,M)=>13/24*Rs*Math.pow(P/365.25,1/3)*Math.pow(M,-1/3);
+let hunted=new Set(),HS=null;
+function genCurve(L,seed){
+  const r=mulberry(seed);const g=()=>{let u=0,v=0;while(!u)u=r();while(!v)v=r();return Math.sqrt(-2*Math.log(u))*Math.cos(6.2832*v)};
+  const span=L.span||27,dt=1/48,t=[],f=[],ev=[];const gaps=[];for(let s=0;s<span;s+=27)gaps.push([s+12.9,s+14.1]);
+  const inGap=x=>gaps.some(q=>x>q[0]&&x<q[1]);
+  const pl=L.planets.map((p,i)=>{const D=Math.max(durDays(p.P,L.Rs,L.M),.04),k=p.Rp*RE_RS/L.Rs;return Object.assign({},p,{i,D,dep:k*k,ing:D*k/(1+k),t0:.3+r()*Math.min(p.P,span*.5)})});
+  pl.forEach(p=>{for(let tc=p.t0;tc<span;tc+=p.P)if(!inGap(tc))ev.push({t:tc,D:p.D,pi:p.i})});
+  const eb=L.eb?Object.assign({t0:.6+r()*2},L.eb):null;
+  if(eb)for(let k=0,tc=eb.t0;tc<span;k++,tc=eb.t0+k*eb.P/2)if(!inGap(tc))ev.push({t:tc,D:eb.D,pi:-1});
+  const fl=[];for(let i=0;i<(L.flares||0);i++)fl.push([r()*span,.004+r()*r()*.03]);
+  const ph=r()*6.28;
+  for(let x=0;x<span;x+=dt){if(inGap(x))continue;let y=1;
+    for(const p of pl){let d=((x-p.t0)%p.P+p.P)%p.P;if(d>p.P/2)d-=p.P;const a=Math.abs(d);if(a<p.D/2){const e=p.D/2-a;y-=p.dep*(e<p.ing?e/p.ing:1)*(1.06-.12*Math.pow(a/(p.D/2),2))}}
+    if(eb){const H2=eb.P/2;let d=((x-eb.t0)%H2+H2)%H2;let n=Math.round((x-eb.t0-d)/H2);if(d>H2/2){d-=H2;n++}const a=Math.abs(d);if(a<eb.D/2)y-=(n%2?eb.d2:eb.d1)*(1-a/(eb.D/2))}
+    if(L.spots)y+=L.spots.A*Math.sin(6.2832*x/L.spots.P+ph);
+    for(const q of fl){const s=x-q[0];if(s>=0&&s<.4)y+=q[1]*Math.exp(-s/.035)}
+    t.push(x);f.push(y+g()*L.sigma)}
+  return{t,f,ev,pl,span}}
+function huntLoad(i){const L=HUNT[i];const c=genCurve(L,1000+i*77);
+  const s=c.f.slice().sort((a,b)=>a-b);const lo=s[Math.floor(s.length*.002)],hi=s[Math.floor(s.length*(L.flares?.985:.998))];const pad=(hi-lo)*.12;
+  HS={i,L,...c,marks:[],v0:0,v1:c.span,lo:lo-pad,hi:hi+pad,hint:null,done:hunted.has(L.star)};
+  $('hHead').innerHTML='<b style="font-size:16px">'+L.star+'</b> <span class="foot">· TESS-style light curve · '+c.span+' days · simulated from real measurements</span>';
+  $('hMsg').innerHTML='<p>'+L.intro+'</p><p class="foot">Tap a dip to mark it (tap again to remove). When you\'re done, pick an answer below.</p>'+zooLink();
+  buildHuntTabs();drawHunt()}
+const zooLink=()=>'<p style="margin-top:12px"><a class="btn sm" style="display:inline-block;text-decoration:none;color:var(--acc)" href="'+ZOO+'" target="_blank" rel="noopener">🔭 Hunt for real with scientists: Planet Hunters TESS ↗</a></p>';
+function buildHuntTabs(){const b=$('hLv');b.innerHTML='';HUNT.forEach((L,i)=>{const x=document.createElement('button');x.className='btn tab'+(HS&&HS.i===i?' on':'');x.textContent=(hunted.has(L.star)?'✓ ':'')+(i+1)+'. '+L.star.replace(' (made-up star)','');x.onclick=()=>huntLoad(i);b.appendChild(x)});
+  const on=b.querySelector('.on');if(on)on.scrollIntoView({inline:'center',block:'nearest'})}
+const hcv=$('hcv'),hx=hcv.getContext('2d');
+function hW(){return hcv.clientWidth}
+const tX=t=>(t-HS.v0)/(HS.v1-HS.v0)*hW();
+function drawHunt(){if(!HS)return;const w=hcv.clientWidth,h=hcv.clientHeight,d=Math.min(devicePixelRatio||1,2);if(hcv.width!==Math.round(w*d)){hcv.width=Math.round(w*d);hcv.height=Math.round(h*d)}
+  hx.setTransform(d,0,0,d,0,0);hx.clearRect(0,0,w,h);const top=8,bot=h-20;const fy=v=>top+(HS.hi-v)/(HS.hi-HS.lo)*(bot-top);
+  // grid
+  hx.font='10px -apple-system,system-ui';hx.fillStyle='#93a2c6';hx.strokeStyle='rgba(140,170,255,.13)';hx.lineWidth=1;
+  const rng=HS.hi-HS.lo,st=[.0001,.0002,.0005,.001,.002,.005,.01,.02,.05,.1].find(s=>rng/s<6)||.2;
+  for(let v=Math.ceil(HS.lo/st)*st;v<HS.hi;v+=st){const y=fy(v);hx.beginPath();hx.moveTo(0,y);hx.lineTo(w,y);hx.stroke();hx.fillText((v*100).toFixed(st<.001?2:st<.01?1:0)+'%',3,y-2)}
+  const ds=[.5,1,2,5,10].find(s=>(HS.v1-HS.v0)/s<8)||10;
+  for(let v=Math.ceil(HS.v0/ds)*ds;v<HS.v1;v+=ds){const x=tX(v);hx.beginPath();hx.moveTo(x,top);hx.lineTo(x,bot);hx.stroke();hx.fillText('day '+(+v.toFixed(1)),x+2,h-6)}
+  if(HS.hint!==null){const x=tX(HS.hint.t),ww=Math.max(14,tX(HS.hint.t+HS.hint.D)-x);hx.fillStyle='rgba(255,210,138,.18)';hx.fillRect(x-ww*.8,top,ww*1.6,bot-top)}
+  // points
+  const T=HS.t,F=HS.f,n=T.length;hx.fillStyle='rgba(120,190,255,.55)';
+  for(let i=0;i<n;i++){if(T[i]<HS.v0||T[i]>HS.v1)continue;hx.fillRect(tX(T[i])-.8,fy(F[i])-.8,1.6,1.6)}
+  // binned line
+  const bw=3,nb=Math.ceil(w/bw),sum=new Float64Array(nb),cnt=new Uint16Array(nb);
+  for(let i=0;i<n;i++){const x=tX(T[i]);if(x<0||x>=w)continue;const b=Math.floor(x/bw);sum[b]+=F[i];cnt[b]++}
+  hx.strokeStyle='rgba(255,255,255,.9)';hx.lineWidth=1.5;hx.beginPath();let pen=false;for(let b=0;b<nb;b++){if(!cnt[b]){pen=false;continue}const x=b*bw+bw/2,y=fy(sum[b]/cnt[b]);pen?hx.lineTo(x,y):hx.moveTo(x,y);pen=true}hx.stroke();
+  // marks
+  for(const m of HS.marks){const x=tX(m.t);if(x<-10||x>w+10)continue;const c=m.ok===false?'#ff8a5a':m.ok?'#6fe39a':'#ffd28a';hx.strokeStyle=c;hx.fillStyle=c;hx.setLineDash([3,3]);hx.beginPath();hx.moveTo(x,top+10);hx.lineTo(x,bot);hx.stroke();hx.setLineDash([]);hx.beginPath();hx.moveTo(x-6,top);hx.lineTo(x+6,top);hx.lineTo(x,top+10);hx.closePath();hx.fill()}
+}
+function nearEv(t){const tol=Math.max((HS.v1-HS.v0)/hW()*14,0);let best=null,bd=1e9;for(const e of HS.ev){const dd=Math.abs(e.t-t);if(dd<Math.max(e.D*.8,tol)&&dd<bd){bd=dd;best=e}}return best}
+// input: tap to mark, drag to pan, pinch to zoom
+{const P=new Map();let mv=0,p0=0,v00=0,v10=0;
+  hcv.addEventListener('pointerdown',e=>{hcv.setPointerCapture(e.pointerId);P.set(e.pointerId,{x:e.clientX});mv=0;if(P.size===2){const [a,b]=[...P.values()];p0=Math.abs(a.x-b.x);v00=HS.v0;v10=HS.v1}});
+  hcv.addEventListener('pointermove',e=>{const p=P.get(e.pointerId);if(!p||!HS)return;const dx=e.clientX-p.x;p.x=e.clientX;mv+=Math.abs(dx);
+    if(P.size===1){const s=(HS.v1-HS.v0)*dx/hW();huntPan(-s)}else if(P.size===2&&p0>0){const [a,b]=[...P.values()];const k=p0/Math.max(20,Math.abs(a.x-b.x));const c=(v00+v10)/2;huntView(c,(v10-v00)*k)}});
+  const up=e=>{const had=P.delete(e.pointerId);if(!had||!HS||mv>8||e.type!=='pointerup'||P.size)return;const rc=hcv.getBoundingClientRect();const t=HS.v0+(e.clientX-rc.left)/hW()*(HS.v1-HS.v0);
+    const ex=HS.marks.findIndex(m=>Math.abs(tX(m.t)-(e.clientX-rc.left))<12);if(ex>=0)HS.marks.splice(ex,1);else HS.marks.push({t});HS.marks.forEach(m=>m.ok=undefined);HS.hint=null;drawHunt()};
+  hcv.addEventListener('pointerup',up);hcv.addEventListener('pointercancel',up)}
+function huntView(c,span){span=clamp(span,.6,HS.span);HS.v0=clamp(c-span/2,0,HS.span-span);HS.v1=HS.v0+span;drawHunt()}
+function huntPan(s){const sp=HS.v1-HS.v0;HS.v0=clamp(HS.v0+s,0,HS.span-sp);HS.v1=HS.v0+sp;drawHunt()}
+$('hZi').onclick=()=>huntView((HS.v0+HS.v1)/2,(HS.v1-HS.v0)/2);
+$('hZo').onclick=()=>huntView((HS.v0+HS.v1)/2,(HS.v1-HS.v0)*2);
+$('hAll').onclick=()=>huntView(HS.span/2,HS.span);
+$('hClr').onclick=()=>{HS.marks=[];drawHunt()};
+$('hHint').onclick=()=>{const un=HS.ev.filter(e=>!HS.marks.some(m=>nearEv(m.t)===e));
+  if(!HS.ev.length){$('hMsg').innerHTML='<p>💡 Hint: look for dips that go clearly below the wiggly line and come back again later, again and again. Do you see any?</p>'+zooLink();return}
+  const e=un.sort((a,b)=>HS.planets_dep?0:0)[Math.floor(Math.random()*un.length)]||HS.ev[0];HS.hint=e;const sp=Math.min(HS.v1-HS.v0,Math.max(2,e.D*25));huntView(e.t,sp)};
+document.querySelectorAll('.hans .btn').forEach(b=>b.onclick=()=>huntAnswer(b.dataset.a));
+function huntAnswer(a){const L=HS.L,hit=new Set();
+  HS.marks.forEach(m=>{const e=nearEv(m.t);m.ok=!!e;if(e)hit.add(e)});drawHunt();
+  const say2=(t)=>{$('hMsg').innerHTML=t+zooLink();$('hMsg').scrollTop=0};
+  if(a!==L.answer){
+    let t='';if(L.answer==='eb'&&a==='planet')t='Not quite! Look at how DEEP those dips are: the star loses about a third of its light. A planet blocks only a tiny bit (even Jupiter blocks about 1% of a Sun-like star). And notice every other dip is shallower…';
+    else if(L.answer==='none')t='Hmm, check again. Real transits repeat at the same depth, again and again. Here the wiggles are just noise and starspots.';
+    else if(a==='none')t='There ARE dips hiding in there! Try zooming in with + and sliding along. Or press 💡 Hint.';
+    else if(a==='eb')t='Good thinking to check for two stars, but these dips are shallow and all the same shape. Two stars would block much more light.';
+    else t='Not quite. Look again: are the dips the same depth each time?';
+    say2('<p>🤔 '+t+'</p>');return}
+  if(L.answer!=='none'){const need=Math.min(L.need||3,HS.ev.length);if(hit.size<need){say2('<p>✅ Right idea! Now mark at least <b>'+need+'</b> dips so we can measure them. You have <b>'+hit.size+'</b> correct'+(HS.marks.length>hit.size?' (orange marks aren\'t on a dip)':'')+'.</p>');return}}
+  // success
+  const first=!hunted.has(L.star);hunted.add(L.star);save();buildHuntTabs();
+  let h='<h3 style="margin:4px 0">🎉 '+(L.answer==='planet'?'Planet'+(HS.pl.length>1?'s':'')+' found!':L.answer==='eb'?'Correct: two stars!':'Correct: no planets here.')+'</h3>';
+  if(L.answer==='planet'){const found=new Set([...hit].map(e=>e.pi));
+    h+='<table><tr><th style="text-align:left">Planet</th><th>Year</th><th>Dip</th><th>Size</th></tr>'+HS.pl.map(p=>'<tr><td style="text-align:left">'+(found.has(p.i)?'✓ ':'')+p.n+'</td><td>'+(p.P<2?fmtNum(p.P*24,1)+' h':fmtNum(p.P,1)+' d')+'</td><td>'+(p.dep*100).toFixed(p.dep<.001?3:2)+'%</td><td>'+fmtNum(p.Rp,2)+'× Earth</td></tr>').join('')+'</table>'+
+      '<p class="foot">How it works: the time between dips is the planet\'s year. The dip\'s depth tells its size: planet width ÷ star width = √(depth). A bigger planet blocks more light.</p>';
+    const big=Math.max(...HS.pl.map(p=>p.Rp));h+='<p>'+(big>8?'That\'s a giant planet, bigger than Jupiter-size (11× Earth).':big>2.5?'Bigger than Earth, closer to Neptune-size (3.9× Earth).':'These are rocky, Earth-size worlds!')+'</p>'}
+  h+='<p>'+L.fact+'</p><div style="display:flex;gap:8px;flex-wrap:wrap">';
+  if(byName[L.star])h+='<button class="btn go" id="hVisit">Visit '+L.star+' ▸</button>';
+  if(HS.i<HUNT.length-1)h+='<button class="btn" id="hNext">Next star ▸</button>';
+  h+='</div>';say2(h);
+  const bv=$('hVisit');if(bv)bv.onclick=()=>{closeSheets();if(cam.bT>500)setMap(false);select(byName[L.star],true)};
+  const bn=$('hNext');if(bn)bn.onclick=()=>huntLoad(HS.i+1);
+  if(first){addBadge('hunter');if(HUNT.every(x=>hunted.has(x.star)))addBadge('hunter_all')}}
+function openHunt(name){openSheet('hunt');const i=Math.max(0,name?HUNT.findIndex(x=>x.star===name):HUNT.findIndex(x=>!hunted.has(x.star)));requestAnimationFrame(()=>huntLoad(i<0?0:i))}
+$('mHunt').onclick=()=>openHunt();
+addEventListener('resize',()=>{if(HS&&$('hunt').style.display==='flex')drawHunt()});
 
 try{initGL()}catch(e){console.error(e);say('This device could not start WebGL: '+e.message)}
 load();
@@ -1209,6 +1356,11 @@ const EXO={
 };
 
 /* fiction bodies added to real systems */
+EXO["Pi Mensae"]={planets:[X('Pi Mensae c',.068,6.268,2.04,'rockhot','Found by TESS in 2018, its first new planet. About twice Earth\'s width.'),X('Pi Mensae b',3.3,2093,12,'coldgas','A giant planet about 10 times heavier than Jupiter. Size is a guess: it never passes in front of the star.')]};
+EXO["LHS 3844"]={planets:[X('LHS 3844 b',.0062,.4629,1.3,'rockhot','A rocky world that circles its star every 11 hours. It seems to have no air at all.')]};
+EXO["AU Microscopii"]={planets:[X('AU Mic b',.0645,8.463,4.2,'icegiant','A young Neptune-size planet, found by TESS in 2020.'),X('AU Mic c',.11,18.86,3.2,'icegiant','A second young Neptune-like planet.')],belts:[{label:'Dust disk',a0:35,a1:120,cnt:1600,col:'#b8a890',h:2}]};
+EXO["HD 209458"]={planets:[X('HD 209458 b',.047,3.525,15.4,'hotjup','\'Osiris\': a puffy hot Jupiter. Its atmosphere is boiling away into a comet-like tail.')]};
+EXO["TOI-700"]={planets:[X('TOI-700 b',.0637,9.98,1.04,'rock','About Earth-size, too close to the star to be cool.'),X('TOI-700 c',.0925,16.05,2.65,'icegiant','A small Neptune-like planet.'),X('TOI-700 e',.134,27.8,.95,'rock','Earth-size, near the inner edge of the habitable zone.'),X('TOI-700 d',.163,37.42,1.19,'ocean','Earth-size and in the habitable zone, where liquid water could exist. Surface look is a guess.')]};
 const FICS={
  "Alpha Centauri":[{n:'Polyphemus',fic:1,series:'Avatar',a:2.6,e:0,i:0,P:1000,Re:9,type:'gasblue',tilt:5,spin:.9,atm:[.4,.8,1,.8],note:'Avatar: the blue gas giant that Pandora orbits. Orbit is illustrative.',
    moons:[{n:'Pandora',fic:1,series:'Avatar',Re:.3,d:3.5,P:9,type:'jungle',atm:[.3,.9,.9,.8],note:'Avatar: a jungle moon with glowing plants.'}]}],
