@@ -1,5 +1,13 @@
 [
   {
+    "id": "wada-colors",
+    "title": "Wada Color Combinations",
+    "tagline": "Tap any of 159 colors to see its matches from Sanzo Wada's color dictionary.",
+    "path": "wada-colors/",
+    "added": "2026-11-26",
+    "thumb": "wada-colors/thumb.png"
+  },
+  {
     "id": "galaxy-explorer",
     "title": "Galaxy Explorer",
     "tagline": "Fly the real Milky Way at 99% of light speed and watch Earth's clock race ahead of yours. Lensed black holes, JWST nebulae, 40+ sci-fi worlds, and a TESS planet-hunting game.",
